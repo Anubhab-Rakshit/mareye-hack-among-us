@@ -2,11 +2,10 @@ import { NextRequest } from "next/server";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 const GOOGLE_REDIRECT_PATH = "/api/auth/google/callback";
-const REDIRECT_URI = `${BASE_URL}${GOOGLE_REDIRECT_PATH}`;
 
-export function getGoogleAuthorizationUrl(state?: string) {
+export function getGoogleAuthorizationUrl(baseUrl: string = "http://localhost:3000", state?: string) {
+  const REDIRECT_URI = `${baseUrl}${GOOGLE_REDIRECT_PATH}`;
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: REDIRECT_URI,
@@ -23,7 +22,8 @@ export function getGoogleAuthorizationUrl(state?: string) {
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
-export async function exchangeCodeForTokens(code: string) {
+export async function exchangeCodeForTokens(code: string, baseUrl: string = "http://localhost:3000") {
+  const REDIRECT_URI = `${baseUrl}${GOOGLE_REDIRECT_PATH}`;
   const params = new URLSearchParams({
     code,
     client_id: GOOGLE_CLIENT_ID,

@@ -27,16 +27,25 @@
 *.tsbuildinfo
 next-env.d.ts
 
-# Backend / ML core (As per user request "no backend")
+# Backend / ML core
+# Allowing essential files for Vercel demo
+!threat_detector.py
+!best.pt
+!Deep_Sea-NN-main/
+!requirements.txt
+!process_enhancement_video.py
+!convert_to_h264.py
+
+# Keep others ignored
 *.py
 *.pt
 *.ipynb
 *.npz
 /detection/
 /scripts/
-/Deep_Sea-NN-main/
 /jain/
 /jain_hard/
+/Deep_Sea-NN-main/
 /requirements.txt
 /Dockerfile
 /render.yaml
@@ -58,4 +67,11 @@ next-env.d.ts
 # Large assets not in public
 /*.mp3
 !/public/**/*.mp3
-node_modules
+
+# Exception for allowing what we specifically unignored above
+!threat_detector.py
+!best.pt
+!Deep_Sea-NN-main/**
+!requirements.txt
+!process_enhancement_video.py
+!convert_to_h264.py

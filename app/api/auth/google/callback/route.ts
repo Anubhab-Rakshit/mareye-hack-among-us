@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { getUserCollection } from "@/dbCollections";
-import { exchangeCodeForTokens, fetchGoogleUserProfile } from "@/lib/google-oauth";
+import { exchangeCodeForTokens, fetchGoogleUserProfile, getBaseUrlFromRequest } from "@/lib/google-oauth";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const tokenResponse = await exchangeCodeForTokens(code);
+    const baseUrl = getBaseUrlFromRequest(req);
+    const tokenResponse = await exchangeCodeForTokens(code, baseUrl);
     const profile = await fetchGoogleUserProfile(tokenResponse.access_token);
 
     const users = await getUserCollection();
