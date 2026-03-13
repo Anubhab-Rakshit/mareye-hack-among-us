@@ -1,0 +1,61 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# env files
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Backend / ML core (As per user request "no backend")
+*.py
+*.pt
+*.ipynb
+*.npz
+/detection/
+/scripts/
+/Deep_Sea-NN-main/
+/jain/
+/jain_hard/
+/requirements.txt
+/Dockerfile
+/render.yaml
+/Procfile
+/deploy.sh
+/data.yaml
+/.security/
+
+# Visualization/Temporary files in root
+*.png
+*.jpg
+*.svg
+!/public/**/*
+
+# Backup/Disabled files
+*.backup.ts
+*.disabled.ts
+
+# Large assets not in public
+/*.mp3
+!/public/**/*.mp3
+node_modules
