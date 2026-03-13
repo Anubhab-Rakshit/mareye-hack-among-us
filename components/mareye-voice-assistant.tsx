@@ -275,30 +275,26 @@ export function MareyeVoiceAssistant() {
       if (!collapsed) return false;
 
       const directPatterns = [
-        /\b(hey|hi|hello|okay|ok)\s+mareye\b/i,
-        /\bmar\s*(eye|i|ai|aye|ay)\b/i,
-        /\bmare\s*(eye|i|ai|aye|ay)\b/i,
-        /\bma\s*ray\b/i,
+        /\b(hey|hi|hello|okay|ok)\s+marine\s*security\b/i,
+        /\bmarine\s*security\b/i,
       ];
 
       if (directPatterns.some((p) => p.test(normalized))) return true;
       if (
-        collapsed.includes("mareye") ||
-        collapsed.includes("marei") ||
-        collapsed.includes("marai") ||
-        collapsed.includes("marye")
+        collapsed.includes("marinesecurity")
       ) {
         return true;
       }
 
-      const target = "mareye";
+      const target = "marine security";
       const words = normalized.split(" ").filter(Boolean);
       for (let i = 0; i < words.length; i++) {
         const one = words[i];
         if (levenshtein(one, target) <= 2) return true;
         if (i < words.length - 1) {
-          const two = `${words[i]}${words[i + 1]}`;
-          if (levenshtein(two, target) <= 2) return true;
+          const two = `${words[i]} ${words[i + 1]}`;
+          if (levenshtein(two, target.replace(/\s/g, "")) <= 2) return true;
+          if (levenshtein(two, "marinesecurity") <= 2) return true;
         }
       }
       return false;

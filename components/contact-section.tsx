@@ -304,10 +304,10 @@ export function ContactSection() {
                       <MapPin className="h-4 w-4 text-cyan-400/60 mt-0.5 flex-shrink-0 group-hover:text-cyan-300 transition-colors" />
                       <div>
                         <div className="text-sm font-space-mono text-white/80 font-bold">
-                          Dayananda Sagar College of Engineering
+                          Jadavpur University , Kolkata
                         </div>
                         <div className="text-xs text-cyan-300/40 font-space-mono mt-0.5">
-                          Kumaraswamy Layout, Pin: 560078, Bangalore, India
+                          Kolkata, West Bengal, India
                         </div>
                       </div>
                     </div>
@@ -316,7 +316,7 @@ export function ContactSection() {
                       <Mail className="h-4 w-4 text-cyan-400/60 flex-shrink-0 group-hover:text-cyan-300 transition-colors" />
                       <div>
                         <div className="text-sm font-space-mono text-white/80 font-bold">
-                          srijitd248@gmail.com
+                          coder.anubhab26@gmail.com
                         </div>
                         <div className="text-[10px] text-cyan-300/30 font-space-mono uppercase tracking-wider">
                           General Inquiries
@@ -328,7 +328,7 @@ export function ContactSection() {
                       <Phone className="h-4 w-4 text-cyan-400/60 flex-shrink-0 group-hover:text-cyan-300 transition-colors" />
                       <div>
                         <div className="text-sm font-space-mono text-white/80 font-bold">
-                          8900007125
+                          9832098320
                         </div>
                         <div className="text-[10px] text-cyan-300/30 font-space-mono uppercase tracking-wider">
                           Research Collaboration

@@ -182,33 +182,33 @@ function isCasualCommand(command: string): boolean {
 function generateCasualResponse(command: string): string {
   const cmd = command.toLowerCase().trim();
   if (/^(hi|hey|hello|howdy|yo|hola|namaste|namaskar)\b/.test(cmd)) {
-    return "Commander, MarEye AI Defense System is online and at your service. All naval zones are under active surveillance. How may I assist you?";
+    return "Commander, Marine Security AI Defense System is online and at your service. All naval zones are under active surveillance. How may I assist you?";
   }
   if (/^(good\s*morning)\b/.test(cmd)) {
-    return "Good morning Commander. MarEye systems are fully operational. All stations reporting normal. Standing by for your orders.";
+    return "Good morning Commander. Marine Security systems are fully operational. All stations reporting normal. Standing by for your orders.";
   }
   if (/^(good\s*(afternoon|evening))\b/.test(cmd)) {
-    return "Good day Commander. MarEye defense grid is active across all operational zones. What do you need?";
+    return "Good day Commander. Marine Security defense grid is active across all operational zones. What do you need?";
   }
   if (/^(good\s*night)\b/.test(cmd)) {
     return "Good night Commander. Switching to automated night surveillance mode. All AI detection systems remain active. Rest well, sir.";
   }
   if (/^(how are you|how do you do|what'?s up|sup|whats up)\b/.test(cmd)) {
-    return "Commander, all systems nominal. Core AI modules are running at full capacity. MarEye is ready for tasking.";
+    return "Commander, all systems nominal. Core AI modules are running at full capacity. Marine Security is ready for tasking.";
   }
   if (/^(thank|thanks|thank you|dhanyavaad|shukriya)\b/.test(cmd)) {
-    return "Aye Commander. MarEye is always at your service. Standing by for further orders.";
+    return "Aye Commander. Marine Security is always at your service. Standing by for further orders.";
   }
   if (/^(bye|goodbye|see you|take care)\b/.test(cmd)) {
-    return "Aye Commander. MarEye will continue autonomous surveillance. Returning to standby mode.";
+    return "Aye Commander. Marine Security will continue autonomous surveillance. Returning to standby mode.";
   }
   if (/^(who are you|what are you|what is your name)\b/.test(cmd)) {
-    return "Commander, I am MarEye, the AI powered Maritime Defense Intelligence System developed for the Indian Naval Command. I provide real-time threat analysis, maritime surveillance, and operational readiness assessment across all Indian Ocean zones.";
+    return "Commander, I am Marine Security, the AI powered Maritime Defense Intelligence System developed for the Indian Naval Command. I provide real-time threat analysis, maritime surveillance, and operational readiness assessment across all Indian Ocean zones.";
   }
   if (/^(what can you do)\b/.test(cmd)) {
-    return "Commander, I can report real-time threat levels across six naval zones, sea conditions, fleet operational readiness, detection scan history, and provide AI-powered threat analysis. Just say MarEye followed by your question.";
+    return "Commander, I can report real-time threat levels across six naval zones, sea conditions, fleet operational readiness, detection scan history, and provide AI-powered threat analysis. Just say Marine Security followed by your question.";
   }
-  return "Aye Commander. MarEye standing by. How may I assist?";
+  return "Aye Commander. Marine Security standing by. How may I assist?";
 }
 
 export async function POST(request: NextRequest) {
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
       // If Groq is available, let AI handle greetings naturally too
       if (process.env.GROQ_API_KEY) {
         try {
-          const casualContext = `You are MAREYE — the AI voice assistant for the MarEye Indian Naval Defense System. You are speaking to a senior Indian naval intelligence officer via voice.
+          const casualContext = `You are Marine Security — the AI voice assistant for the Marine Security Indian Naval Defense System. You are speaking to a senior Indian naval intelligence officer via voice.
 The user said something casual/greeting: "${command}"
 Respond naturally and briefly as a military AI assistant. Maximum 1-2 sentences. Be warm but professional. Use Indian naval terminology.
 CRITICAL: Your response will be spoken aloud. No formatting, no symbols, no markdown. Just plain conversational English.`;
@@ -270,7 +270,7 @@ CRITICAL: Your response will be spoken aloud. No formatting, no symbols, no mark
     }
 
     // Build the enhanced prompt with full platform data
-    const enhancedContext = `You are MAREYE — the AI voice assistant for the MarEye Indian Naval Defense System. You are speaking to a senior Indian naval intelligence officer via voice.
+    const enhancedContext = `You are Marine Security — the AI voice assistant for the Marine Security Indian Naval Defense System. You are speaking to a senior Indian naval intelligence officer via voice.
 
 YOUR PERSONA:
 - You are a military-grade AI defense system aboard an Indian Naval vessel
@@ -368,8 +368,8 @@ function generateOfflineResponse(
     return `Commander, fleet operational readiness is at ${readiness} percent. Submarine operations, surface patrol, helicopter ops, and diving operations are being assessed in real-time across all ${totalZones} zones from Mumbai to Chennai.`;
   }
   if (cmd.includes("hello") || cmd.includes("hi ") || cmd.includes("hey")) {
-    return `Commander, MarEye AI Defense System is online and standing by. ${totalZones} naval zones under active surveillance across the Indian Ocean region. How may I assist you?`;
+    return `Commander, Marine Security AI Defense System is online and standing by. ${totalZones} naval zones under active surveillance across the Indian Ocean region. How may I assist you?`;
   }
 
-  return `Commander, MarEye AI is operating in offline mode. Current threat level is ${avgThreat} percent and fleet readiness is at ${readiness} percent across ${totalZones} zones. For full AI analysis capability, please configure the Groq API key.`;
+  return `Commander, Marine Security AI is operating in offline mode. Current threat level is ${avgThreat} percent and fleet readiness is at ${readiness} percent across ${totalZones} zones. For full AI analysis capability, please configure the Groq API key.`;
 }
