@@ -108,6 +108,7 @@ export default function AnalyticsPage() {
     onnx: [],
     tensorrt: [],
   });
+  const [activeModelName, setActiveModelName] = useState<string | null>(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisData | null>(
     null,
   );
@@ -119,6 +120,22 @@ export default function AnalyticsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [testingModel, setTestingModel] = useState<string | null>(null);
   const [deploying, setDeploying] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("mareye-active-model");
+      if (stored) setActiveModelName(stored);
+    } catch {}
+  }, []);
+
+  const handleSelectModel = (model: any) => {
+    const name = model?.name;
+    if (!name) return;
+    setActiveModelName(name);
+    try {
+      window.localStorage.setItem("mareye-active-model", name);
+    } catch {}
+  };
 
   const fetchData = async () => {
     try {
@@ -363,7 +380,10 @@ export default function AnalyticsPage() {
                   ANALYTICS COMMAND
                 </h1>
                 <p className="text-cyan-200 text-sm font-space-mono mt-1">
-                  {analyticsData.length} CNN Enhancement Reports Available
+                  {analyticsData.length} CNN Enhancement Reports •{" "}
+                  <span className="text-emerald-300">
+                    Active Model: {activeModelName || "Auto-select"}
+                  </span>
                 </p>
               </div>
             </div>
@@ -601,10 +621,16 @@ export default function AnalyticsPage() {
                     <div className="space-y-3">
                       {modelsData.onnx.map((model) => {
                         const status = getModelStatus(model);
+                        const isActive = activeModelName === model.name;
                         return (
                           <div
                             key={model.name}
-                            className="group p-4 bg-slate-800/50 rounded-lg border border-cyan-500/20 hover:border-cyan-400/50 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-cyan-500/5"
+                            className={`group p-4 rounded-lg border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
+                              isActive
+                                ? "bg-slate-900/70 border-emerald-400/60 shadow-emerald-500/20"
+                                : "bg-slate-800/50 border-cyan-500/20 hover:border-cyan-400/50 hover:shadow-cyan-500/5"
+                            }`}
+                            onClick={() => handleSelectModel(model)}
                           >
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex-1 min-w-0">
@@ -621,6 +647,11 @@ export default function AnalyticsPage() {
                                     <CheckCircle2 className="w-3 h-3" />
                                     {status.text}
                                   </Badge>
+                                  {isActive && (
+                                    <Badge className="bg-emerald-500/30 text-emerald-100 border-emerald-400/60 text-[10px]">
+                                      USING
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-xs text-cyan-300/70">
                                   <div className="flex items-center gap-1">

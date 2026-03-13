@@ -676,8 +676,8 @@ export function MareyeVoiceAssistant() {
       />
 
       {/* ═══ Tiny Always-On Indicator — Bottom Left (NO mic button) ═══ */}
-      <div className="fixed bottom-6 left-6 z-50 flex items-center gap-2">
-        <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 border border-cyan-500/20 backdrop-blur-sm">
+      <div className="fixed bottom-6 left-6 z-50 flex items-center gap-2 mb-16 sm:mb-0">
+        <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 border border-cyan-500/20 backdrop-blur-sm shadow-lg shadow-black/20">
           {/* Pulsing dot — always alive */}
           <div className="relative">
             <div

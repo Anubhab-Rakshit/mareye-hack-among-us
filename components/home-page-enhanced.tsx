@@ -67,6 +67,7 @@ export function HomePageEnhanced() {
   const router = useRouter();
   const [activeFeature, setActiveFeature] = useState(0);
   const [heroLoaded, setHeroLoaded] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
   const parallaxOffset = useParallax(0.3);
   const mouseOffset = useMouseParallax(0.015);
 
@@ -86,9 +87,15 @@ export function HomePageEnhanced() {
       setActiveFeature((prev) => (prev + 1) % 3);
     }, 4000);
 
+    const handleScroll = () => {
+      setHasScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     return () => {
       clearTimeout(timer);
       clearInterval(featureInterval);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -209,7 +216,7 @@ export function HomePageEnhanced() {
               <div
                 className={`transition-all duration-700 delay-300 ${heroLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
               >
-                <p className="text-base md:text-lg text-cyan-200/70 max-w-xl mx-auto lg:mx-0 leading-relaxed font-space-mono">
+                <p className="text-sm md:text-lg text-cyan-200/70 max-w-xl mx-auto lg:mx-0 leading-relaxed font-space-mono">
                   Advanced AI-Powered Platform for Underwater Image Enhancement,
                   Object Detection & Marine Security Operations
                 </p>
@@ -331,23 +338,23 @@ export function HomePageEnhanced() {
                   {/* Pipeline Overlay */}
                   <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-5">
                     <div className="space-y-2">
-                      <h3 className="font-orbitron font-bold text-white text-xs tracking-[0.15em] text-glow-cyan">
+                      <h3 className="font-orbitron font-bold text-white text-xs tracking-[0.15em] text-glow-cyan text-center sm:text-left">
                         AI DEFENSE PIPELINE
                       </h3>
-                      <div className="flex items-center justify-between text-[10px] font-space-mono text-cyan-300 space-x-1.5">
-                        <span className="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30">
+                      <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-[10px] font-space-mono text-cyan-300 space-y-2 sm:space-y-0 sm:space-x-1.5">
+                        <span className="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 w-full sm:w-auto text-center">
                           SCAN
                         </span>
-                        <ArrowRight className="w-3 h-3 text-cyan-500/40" />
-                        <span className="px-2 py-0.5 rounded bg-blue-500/15 border border-blue-500/30">
+                        <ArrowRight className="hidden sm:block w-3 h-3 text-cyan-500/40" />
+                        <span className="px-2 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 w-full sm:w-auto text-center">
                           DETECT
                         </span>
-                        <ArrowRight className="w-3 h-3 text-cyan-500/40" />
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30">
+                        <ArrowRight className="hidden sm:block w-3 h-3 text-cyan-500/40" />
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 w-full sm:w-auto text-center">
                           CLASSIFY
                         </span>
-                        <ArrowRight className="w-3 h-3 text-cyan-500/40" />
-                        <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30">
+                        <ArrowRight className="hidden sm:block w-3 h-3 text-cyan-500/40" />
+                        <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 w-full sm:w-auto text-center">
                           RESPOND
                         </span>
                       </div>
@@ -391,7 +398,7 @@ export function HomePageEnhanced() {
 
         {/* Scroll Indicator */}
         <div
-          className={`absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-700 delay-[1200ms] ${heroLoaded ? "opacity-100" : "opacity-0"}`}
+          className={`absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-700 delay-[1200ms] ${heroLoaded && !hasScrolled ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         >
           <div className="flex flex-col items-center gap-2 animate-bounce">
             <span className="text-[8px] font-space-mono text-cyan-400/40 uppercase tracking-[0.2em]">
@@ -418,10 +425,10 @@ export function HomePageEnhanced() {
                   Core Features
                 </span>
               </div>
-              <h2 className="text-4xl md:text-6xl font-black mb-4 gradient-text-ocean font-orbitron">
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 gradient-text-ocean font-orbitron px-4">
                 POWERFUL FEATURES
               </h2>
-              <p className="text-base text-cyan-200/50 max-w-2xl mx-auto font-space-mono">
+              <p className="text-sm md:text-base text-cyan-200/50 max-w-2xl mx-auto font-space-mono px-4">
                 Cutting-edge AI technology for marine security operations
               </p>
             </div>
@@ -569,10 +576,10 @@ export function HomePageEnhanced() {
                   Solutions
                 </span>
               </div>
-              <h2 className="text-4xl md:text-6xl font-black mb-4 gradient-text-ocean font-orbitron">
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 gradient-text-ocean font-orbitron px-4">
                 AI-POWERED SOLUTIONS
               </h2>
-              <p className="text-base text-cyan-200/50 max-w-2xl mx-auto font-space-mono">
+              <p className="text-sm md:text-base text-cyan-200/50 max-w-2xl mx-auto font-space-mono px-4">
                 Advanced platform combining CNN image processing and object
                 detection
               </p>

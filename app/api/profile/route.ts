@@ -66,11 +66,43 @@ export async function GET(req: NextRequest) {
       }, { status: 401 });
     }
 
+    // ═══ HONEYPOT ADMIN BYPASS HANDLING ═══
+    // If ID starts with honeypot-admin-, it's a virtual user from the bypass login
+    if (typeof decoded.id === 'string' && decoded.id.startsWith("honeypot-admin-")) {
+      console.log("Honeypot Bypass Admin detected in profile API:", decoded.email);
+      return NextResponse.json({ 
+        success: true, 
+        user: {
+          firstName: "Srijit",
+          lastName: "Admin",
+          email: decoded.email,
+          avatar: null,
+          subscription: {
+            plan: 'pro',
+            status: 'active'
+          },
+          tokens: {
+            dailyLimit: 9999,
+            usedToday: 0,
+            lastResetDate: new Date(),
+            totalUsed: 0
+          },
+          isHoneypotAdmin: true
+        }
+      });
+    }
+
     // Find user in database using the same method as login
-    const users = await getUserCollection();
-    const user = await users.findOne({ _id: new ObjectId(decoded.id) });
+    let user: any = null;
+    try {
+      const users = await getUserCollection();
+      user = await users.findOne({ _id: new ObjectId(decoded.id) });
+    } catch (dbErr) {
+      console.error("Database or ObjectId error in profile API:", dbErr);
+      // Fall through to !user check
+    }
     
-    console.log("User found:", user ? "Yes" : "No");
+    console.log("User found in database:", user ? "Yes" : "No");
     
     if (!user) {
       return NextResponse.json({

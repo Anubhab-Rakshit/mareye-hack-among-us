@@ -265,33 +265,33 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
   return (
     <div className="space-y-6">
       {/* System metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <TacticalStat
           label="Detection Speed"
           value="30+"
           unit="FPS"
           variant="primary"
-          icon={<Zap className="w-5 h-5" />}
+          icon={<Zap className="w-4 h-4 sm:w-5 sm:h-5" />}
         />
         <TacticalStat
           label="Accuracy Rate"
           value="95"
           unit="%"
           variant="success"
-          icon={<Eye className="w-5 h-5" />}
+          icon={<Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
         />
         <TacticalStat
           label="Detectable Classes"
           value="5"
           unit="types"
           variant="secondary"
-          icon={<BarChart3 className="w-5 h-5" />}
+          icon={<BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />}
         />
         <TacticalStat
           label="System Status"
           value="ONLINE"
           variant="primary"
-          icon={<Settings className="w-5 h-5" />}
+          icon={<Settings className="w-4 h-4 sm:w-5 sm:h-5" />}
         />
       </div>
 

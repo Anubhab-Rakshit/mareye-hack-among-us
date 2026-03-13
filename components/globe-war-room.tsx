@@ -7,6 +7,7 @@ import {
   Crosshair, Anchor, RefreshCw, Activity, Eye, EyeOff,
   Navigation, Waves, Wind,
 } from "lucide-react";
+import { WarRoomHoneypotFeed } from "@/components/war-room-honeypot-feed";
 
 // ═══════════════════════════════════════════════════════════
 // TYPES
@@ -745,6 +746,9 @@ export function GlobeWarRoom() {
                 ))}
               </div>
             </div>
+
+            {/* Live Honeypot Feed */}
+            <WarRoomHoneypotFeed />
 
             {/* Fleet */}
             <div className="bg-slate-900/60 border border-cyan-500/15 rounded-xl p-3">

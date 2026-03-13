@@ -550,34 +550,34 @@ export function CNNEnhancementView() {
                 </div>
               </div>
               <div className="text-left">
-                <h1 className="text-4xl md:text-6xl lg:text-8xl font-black mb-2 bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent animate-gradient font-orbitron tracking-wider">
+                <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-8xl font-black mb-2 bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent animate-gradient font-orbitron tracking-wider">
                   SUBMARINE
                 </h1>
-                <h2 className="text-3xl md:text-4xl lg:text-6xl font-black mb-2 bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-300 bg-clip-text text-transparent animate-gradient font-orbitron tracking-wider">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-black mb-2 bg-gradient-to-r from-blue-300 via-cyan-300 to-blue-300 bg-clip-text text-transparent animate-gradient font-orbitron tracking-wider">
                   CONTROL ROOM
                 </h2>
-                <p className="text-lg md:text-xl text-cyan-200 font-space-mono tracking-widest mt-2">
+                <p className="text-sm sm:text-base md:text-xl text-cyan-200 font-space-mono tracking-widest mt-2 max-w-sm sm:max-w-none mx-auto sm:mx-0">
                   CNN ENHANCEMENT SYSTEM | MARINE SECURITY
                 </p>
               </div>
             </div>
 
             {/* Security Badges Row */}
-            <div className="flex items-center justify-center gap-4 mt-6 flex-wrap">
-              <Badge className="bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500/40 px-5 py-2.5 shadow-lg">
-                <Lock className="w-4 h-4 mr-2" />
+            <div className="flex items-center justify-center gap-2 sm:gap-4 mt-6 flex-wrap px-4">
+              <Badge className="bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500/40 px-3 sm:px-5 py-2 shadow-lg text-xs sm:text-sm">
+                <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 ENCRYPTED
               </Badge>
-              <Badge className="bg-cyan-500/20 text-cyan-300 border-2 border-cyan-500/40 px-5 py-2.5 shadow-lg">
-                <Shield className="w-4 h-4 mr-2" />
+              <Badge className="bg-cyan-500/20 text-cyan-300 border-2 border-cyan-500/40 px-3 sm:px-5 py-2 shadow-lg text-xs sm:text-sm">
+                <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 SECURE
               </Badge>
-              <Badge className="bg-blue-500/20 text-blue-300 border-2 border-blue-500/40 px-5 py-2.5 shadow-lg">
-                <Satellite className="w-4 h-4 mr-2" />
+              <Badge className="bg-blue-500/20 text-blue-300 border-2 border-blue-500/40 px-3 sm:px-5 py-2 shadow-lg text-xs sm:text-sm">
+                <Satellite className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 ACTIVE
               </Badge>
-              <Badge className="bg-purple-500/20 text-purple-300 border-2 border-purple-500/40 px-5 py-2.5 shadow-lg">
-                <Monitor className="w-4 h-4 mr-2" />
+              <Badge className="bg-purple-500/20 text-purple-300 border-2 border-purple-500/40 px-3 sm:px-5 py-2 shadow-lg text-xs sm:text-sm">
+                <Monitor className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 OPERATIONAL
               </Badge>
             </div>

@@ -40,6 +40,7 @@ export function Navigation() {
     { href: "/cnn", label: "CNN", icon: Brain },
     { href: "/detection", label: "Detection", icon: Target },
     { href: "/command-center", label: "Command", icon: Radar },
+    { href: "/watchlist", label: "Watchlist", icon: Activity },
     { href: "/intelligence", label: "Intel", icon: Globe },
     { href: "/mission-planner", label: "Planner", icon: Map },
     { href: "/threat-prediction", label: "Threats", icon: Activity },
@@ -296,7 +297,7 @@ export function Navigation() {
               isMenuOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
             }`}
           >
-            <div className="px-3 pt-3 pb-5 space-y-1.5 border-t border-cyan-500/10">
+            <div className="px-3 pt-3 pb-5 space-y-1 border-t border-cyan-500/10">
               {visibleNavItems.map((item, index) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
@@ -304,7 +305,7 @@ export function Navigation() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center space-x-3 px-4 py-3 text-xs font-space-mono font-bold rounded-xl transition-all duration-300 uppercase tracking-wider ${
+                    className={`flex items-center space-x-3 px-4 py-2.5 text-xs font-space-mono font-bold rounded-xl transition-all duration-300 uppercase tracking-wider ${
                       isActive
                         ? "text-cyan-100 bg-cyan-500/15 border border-cyan-400/30 shadow-lg shadow-cyan-500/10"
                         : "text-cyan-300/70 hover:text-cyan-100 hover:bg-cyan-500/5"

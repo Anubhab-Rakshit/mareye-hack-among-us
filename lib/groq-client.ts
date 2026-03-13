@@ -1,10 +1,13 @@
-import { groq } from "@ai-sdk/groq"
+import { groq, createGroq } from "@ai-sdk/groq"
 import { generateText } from "ai"
 
 function sanitizeKey(key: string) {
-  // common .env mistakes: quotes + trailing spaces
-  const trimmed = key.trim()
-  return trimmed.replace(/^['"]|['"]$/g, "").trim()
+  if (!key) return ""
+  // common .env mistakes: quotes, backticks, trailing spaces, and hidden characters
+  return key
+    .trim()
+    .replace(/^['"`]|['"`]$/g, "") // Remove starting/ending quotes or backticks
+    .trim()
 }
 
 function isInvalidKeyError(err: unknown) {
@@ -18,7 +21,17 @@ function isModelError(err: unknown) {
 }
 
 export async function generateGroqResponse(message: string, context: string = "") {
-  const key = sanitizeKey(process.env.GROQ_API_KEY || "")
+  const rawKey = process.env.GROQ_API_KEY || ""
+  const key = sanitizeKey(rawKey)
+
+  if (process.env.NODE_ENV !== "production") {
+    const masked =
+      key.length > 8
+        ? `${key.slice(0, 4)}...${key.slice(-4)}`
+        : "INVALID_LENGTH"
+    console.log(`[Groq] Debug: Key Length: ${key.length}, Masked: ${masked}`)
+  }
+
   if (!key) {
     throw new Error("Missing GROQ_API_KEY in environment variables")
   }
@@ -66,19 +79,27 @@ User message: ${message}`
     "gemma2-9b-it",
   ].filter(Boolean)
 
-  let lastError: unknown = null
+  let lastError: any = null
   for (const modelId of candidates) {
     try {
+      // Create a specific groq instance with our sanitized key
+      const groqProvider = createGroq({ apiKey: key })
+      const model = groqProvider(modelId)
+
       const result = await generateText({
-        model: groq(modelId),
+        model,
         prompt: systemPrompt,
         temperature: 0.7,
       })
       return result.text
     } catch (err) {
       lastError = err
+      console.error(`[Groq] Attempt failed with model ${modelId}:`, err)
+
       if (isInvalidKeyError(err)) {
-        throw new Error("Invalid GROQ_API_KEY. Paste a valid Groq API key and restart the dev server.")
+        throw new Error(
+          `Invalid GROQ_API_KEY. Key length: ${key.length}. Error details: ${err instanceof Error ? err.message : String(err)}`
+        )
       }
       // If this model is invalid/decommissioned, try the next one.
       if (isModelError(err)) {

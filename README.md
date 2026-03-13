@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="public/mareye-logo.svg" width="100" height="100" alt="MarEye Logo">
-  <h1>MarEye AI Defense System</h1>
+  <img src="public/mareye-logo.svg" width="100" height="100" alt="Marine Security Logo">
+  <h1>Marine Security AI Defense System</h1>
   <p><strong>Next-Gen Maritime Domain Awareness & Threat Intelligence Platform</strong></p>
 </div>
 
@@ -8,7 +8,7 @@
 
 ## 🌊 Overview
 
-MarEye is an advanced, AI-powered maritime defense and surveillance platform designed to provide real-time threat detection, zone-based intelligence, and operational command capabilities. Built with modern, tactical UI paradigms, MarEye integrates machine learning directly into a high-performance web application to empower naval operations.
+Marine Security is an advanced, AI-powered maritime defense and surveillance platform designed to provide real-time threat detection, zone-based intelligence, and operational command capabilities. Built with modern, tactical UI paradigms, Marine Security integrates machine learning directly into a high-performance web application to empower naval operations.
 
 > **Note on Deployment:** This repository represents the **Production Frontend & Core API Architecture**. To ensure a smooth browser experience and high-availability deployment on serverless platforms (like Vercel), the heaviest machine-learning background services and edge-device hardware integrations are maintained in dedicated microservice repositories. Essential ML scripts and optimized model weights (e.g., `best.pt`, `Deep_Sea-NN-main/`) are included here to provide native detection and enhancement capabilities via our Next.js API routes.
 
