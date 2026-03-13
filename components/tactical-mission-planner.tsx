@@ -7,6 +7,7 @@ import {
   MapPin, Play, Pause, Trash2, Settings, Globe2, Activity, RefreshCw, Radar,
   Eye, EyeOff, Layers, Waves, Wind, Zap, ChevronDown, Brain, Route,
 } from "lucide-react";
+import { loadDetections } from "@/lib/detection-storage";
 
 // ═══════════════════════════════════════════════════════════
 // TYPES
@@ -192,6 +193,7 @@ export function TacticalMissionPlanner() {
   const wpLayersRef = useRef<L.LayerGroup | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const aiPathLayerRef = useRef<L.LayerGroup | null>(null);
+  const liveThreatLayersRef = useRef<L.LayerGroup | null>(null);
 
   const [intel, setIntel] = useState<IntelResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -208,6 +210,9 @@ export function TacticalMissionPlanner() {
   const [showThreats, setShowThreats] = useState(true);
   const [tileType, setTileType] = useState<keyof typeof TILE_LAYERS>("topo");
   const [cursorPos, setCursorPos] = useState<{lat: number; lng: number} | null>(null);
+  const [liveDetections, setLiveDetections] = useState<any[]>([]);
+  const [showLiveDetections, setShowLiveDetections] = useState(true);
+  const [isMapReady, setIsMapReady] = useState(false);
 
   // ── AI Path Planner state ──
   const [aiPlanLoading, setAiPlanLoading] = useState(false);
@@ -236,6 +241,70 @@ export function TacticalMissionPlanner() {
   }, []);
 
   useEffect(() => { fetchIntel(); }, [fetchIntel]);
+  
+  // ── Fetch live detections ──
+  const fetchLiveDetections = useCallback(() => {
+    try {
+      // 1. Load from mareye_detections (full detailed set)
+      const detections = loadDetections();
+      const withCoords = detections.filter((d): d is (typeof d & { lat: number; lng: number }) => 
+        d.lat !== undefined && d.lng !== undefined && 
+        !isNaN(Number(d.lat)) && !isNaN(Number(d.lng))
+      );
+
+      // 2. Load from activeThreats (tactical map set used in War Room)
+      const activeThreatsStr = localStorage.getItem("activeThreats");
+      const activeThreats = activeThreatsStr ? JSON.parse(activeThreatsStr) : [];
+      
+      // Combine them, avoiding duplicates by lat/lng if possible
+      const combined = [...withCoords];
+      activeThreats.forEach((at: any) => {
+        const exists = combined.some(d => Math.abs(d.lat - at.lat) < 0.0001 && Math.abs(d.lng - at.lng) < 0.0001);
+        if (!exists) {
+            combined.push({
+                id: at.id,
+                lat: at.lat,
+                lng: at.lng,
+                overallThreatScore: at.threatScore,
+                detections: [{ 
+                  class: at.classification, 
+                  confidence: at.threatScore / 100, 
+                  bbox: [0, 0, 0, 0], 
+                  color: "#ef4444" 
+                }],
+                timestamp: at.timestamp || Date.now(),
+                // Dummy data for missing required fields
+                originalImage: "",
+                detectedImage: "",
+                processingTime: 0,
+                totalObjects: 1
+            });
+        }
+      });
+
+      setLiveDetections(combined);
+    } catch (e) { console.error("Live detection fetch:", e); }
+  }, []);
+
+  useEffect(() => {
+    fetchLiveDetections();
+    const iv = setInterval(fetchLiveDetections, 5000);
+    
+    // Listen for custom events and storage changes (cross-tab sync)
+    const handleSync = () => fetchLiveDetections();
+    
+    window.addEventListener("detectionAdded", handleSync);
+    window.addEventListener("threatDetected", handleSync);
+    window.addEventListener("storage", handleSync);
+    
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener("detectionAdded", handleSync);
+      window.removeEventListener("threatDetected", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
+  }, [fetchLiveDetections]);
+
   useEffect(() => { const iv = setInterval(fetchIntel, 60000); return () => clearInterval(iv); }, [fetchIntel]);
 
   // ── Route calculations ──
@@ -329,6 +398,7 @@ export function TacticalMissionPlanner() {
     eezLayersRef.current = L.layerGroup().addTo(map);
     wpLayersRef.current = L.layerGroup().addTo(map);
     aiPathLayerRef.current = L.layerGroup().addTo(map);
+    liveThreatLayersRef.current = L.layerGroup().addTo(map);
 
     // Cursor position tracking
     map.on("mousemove", (e: L.LeafletMouseEvent) => {
@@ -336,6 +406,7 @@ export function TacticalMissionPlanner() {
     });
 
     mapRef.current = map;
+    setIsMapReady(true);
 
     // Force map to recalculate size after CSS loads and container renders
     const timers = [
@@ -449,6 +520,44 @@ export function TacticalMissionPlanner() {
       }).addTo(threatLayersRef.current!);
     });
   }, [threatZones, showThreats]);
+
+  // ── Draw live detections (pulsing markers) ──
+  useEffect(() => {
+    if (!liveThreatLayersRef.current) return;
+    liveThreatLayersRef.current.clearLayers();
+    if (!showLiveDetections) return;
+
+    liveDetections.forEach(d => {
+      const color = "#ef4444"; // Pulsing red for live threats
+      
+      const marker = L.marker([d.lat, d.lng], {
+        icon: L.divIcon({
+          className: "",
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+          html: `<div style="position:relative;width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+            <div style="position:absolute;inset:0;background:${color}44;border-radius:50%;animation:ping 2s cubic-bezier(0, 0, 0.2, 1) infinite"></div>
+            <div style="width:10px;height:10px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px ${color}"></div>
+            <div style="position:absolute;top:-14px;color:${color};font-size:7px;font-weight:bold;font-family:monospace;white-space:nowrap;text-shadow:0 0 4px #000">${d.detections?.[0]?.class.toUpperCase()}</div>
+          </div>`,
+        })
+      }).addTo(liveThreatLayersRef.current!);
+
+      marker.bindPopup(`
+        <div style="background:#0f172a;border:1px solid ${color}44;border-radius:8px;padding:8px 12px;min-width:180px;font-family:monospace">
+           <div style="color:${color};font-size:10px;font-weight:bold;font-family:'Orbitron',monospace;margin-bottom:4px;display:flex;align-items:center;gap:2px">
+            <span style="display:inline-block;width:6px;height:6px;background:${color};border-radius:50%;animation:pulse 1s infinite"></span>
+            LIVE CNN DETECTION
+           </div>
+           <div style="color:#fff;font-size:11px;margin-bottom:4px">${d.detections?.[0]?.class || "Unknown Object"}</div>
+           <div style="color:#94a3b8;font-size:8px">Confidence: ${(d.overallThreatScore || 0)}%</div>
+           <div style="color:#94a3b8;font-size:8px">Time: ${new Date(d.timestamp).toLocaleTimeString()}</div>
+           <div style="color:#64748b;font-size:7px;margin-top:4px">${d.lat.toFixed(4)}°N / ${d.lng.toFixed(4)}°E</div>
+           ${d.detectedImage ? `<img src="${d.detectedImage}" style="width:100%;height:80px;object-fit:cover;border-radius:4px;margin-top:8px;border:1px solid #ffffff11" />` : ""}
+        </div>
+      `, { className: "tactical-popup" });
+    });
+  }, [liveDetections, showLiveDetections, isMapReady]);
 
   // ── Draw naval markers ──
   useEffect(() => {
@@ -868,6 +977,7 @@ export function TacticalMissionPlanner() {
                   { key: "shipping", label: "SHIPPING", show: showShipping, set: setShowShipping, color: "amber" },
                   { key: "eez", label: "EEZ", show: showEEZ, set: setShowEEZ, color: "cyan" },
                   { key: "threats", label: "THREATS", show: showThreats, set: setShowThreats, color: "red" },
+                  { key: "live", label: "LIVE DETECTIONS", show: showLiveDetections, set: setShowLiveDetections, color: "emerald" },
                 ] as const).map(l => (
                   <button key={l.key} onClick={() => l.set((p: boolean) => !p)}
                     className={`block w-full text-left px-2 py-1 rounded text-[7px] font-orbitron transition-all backdrop-blur-sm ${l.show

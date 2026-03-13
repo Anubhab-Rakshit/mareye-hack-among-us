@@ -8,6 +8,7 @@ import {
   honeypotAdminCookieOptions,
   isConfiguredHoneypotAdminCredential,
 } from "@/lib/honeypot-admin"
+import { verify } from 'otplib'
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret"
 const TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30 // 30 days - extended session
@@ -19,7 +20,7 @@ function dbConfigError(err: unknown) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json()
+    const { email, password, totpCode } = await req.json()
 
     if (!email || !password) {
       return NextResponse.json({ message: "Missing email or password" }, { status: 400 })
@@ -28,6 +29,23 @@ export async function POST(req: NextRequest) {
     // ═══ HONEYPOT ADMIN BYPASS — allows login even without DB entry ═══
     const isHoneypotAdminDirect = isConfiguredHoneypotAdminCredential(email, password)
     if (isHoneypotAdminDirect) {
+      // Check for TOTP constraint
+      const adminTotpSecret = process.env.HONEYPOT_ADMIN_TOTP_SECRET
+      if (adminTotpSecret) {
+        if (!totpCode) {
+          return NextResponse.json(
+            { message: "TOTP required", requiresTotp: true },
+            { status: 202 }
+          )
+        }
+
+        const isValidTotp = await verify({ token: totpCode, secret: adminTotpSecret })
+        
+        if (!isValidTotp) {
+          return NextResponse.json({ message: "Invalid Authenticator code" }, { status: 401 })
+        }
+      }
+
       const adminId = "honeypot-admin-" + Date.now()
       const token = jwt.sign(
         { id: adminId, email },
@@ -77,6 +95,25 @@ export async function POST(req: NextRequest) {
 
     const isHoneypotAdmin = isConfiguredHoneypotAdminCredential(email, password)
 
+    // Check TOTP for admin account even if it exists in DB
+    if (isHoneypotAdmin) {
+      const adminTotpSecret = process.env.HONEYPOT_ADMIN_TOTP_SECRET
+      if (adminTotpSecret) {
+        if (!totpCode) {
+          return NextResponse.json(
+            { message: "TOTP required", requiresTotp: true },
+            { status: 202 }
+          )
+        }
+
+        const otplib = await import('otplib')
+        const isValidTotp = await otplib.verify({ token: totpCode, secret: adminTotpSecret })
+        
+        if (!isValidTotp) {
+          return NextResponse.json({ message: "Invalid Authenticator code" }, { status: 401 })
+        }
+      }
+    }
     // Create token with consistent field name
     const token = jwt.sign(
       { 

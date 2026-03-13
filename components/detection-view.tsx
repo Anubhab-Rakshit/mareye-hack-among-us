@@ -176,6 +176,22 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
       const result = await response.json();
 
       if (result.success) {
+        // Get location from inputs or profile
+        let finalLat = latitude ? parseFloat(latitude) : null;
+        let finalLng = longitude ? parseFloat(longitude) : null;
+        
+        if (!finalLat || !finalLng) {
+          try {
+            const profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+            if (profile.latitude && profile.longitude) {
+              finalLat = parseFloat(profile.latitude);
+              finalLng = parseFloat(profile.longitude);
+              if (!latitude) setLatitude(profile.latitude.toString());
+              if (!longitude) setLongitude(profile.longitude.toString());
+            }
+          } catch (e) {}
+        }
+
         const detectionResult: DetectionResult = {
           originalImage: URL.createObjectURL(selectedFile),
           detectedImage: result.detectedImage,
@@ -198,15 +214,17 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
           overallThreatLevel: detectionResult.overallThreatLevel,
           overallThreatScore: detectionResult.overallThreatScore,
           threatCount: detectionResult.threatCount,
+          lat: finalLat || undefined,
+          lng: finalLng || undefined,
         });
 
         const newResults = [detectionResult, ...results];
         updateResults(newResults);
         
         // Save to map if coords provided and threat detected
-        if (latitude && longitude && result.overallThreatScore > 0) {
+        if (finalLat && finalLng && result.overallThreatScore > 0) {
           const mainClass = result.detections[0]?.class || "Unknown Contact";
-          storeThreatForMap(parseFloat(latitude), parseFloat(longitude), result.overallThreatScore, mainClass);
+          storeThreatForMap(finalLat, finalLng, result.overallThreatScore, mainClass);
         }
         
         setSelectedFile(null);
@@ -258,6 +276,22 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
       const result = await response.json();
 
       if (result.success) {
+        // Get location from inputs or profile
+        let finalLat = latitude ? parseFloat(latitude) : null;
+        let finalLng = longitude ? parseFloat(longitude) : null;
+        
+        if (!finalLat || !finalLng) {
+          try {
+            const profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+            if (profile.latitude && profile.longitude) {
+              finalLat = parseFloat(profile.latitude);
+              finalLng = parseFloat(profile.longitude);
+              if (!latitude) setLatitude(profile.latitude.toString());
+              if (!longitude) setLongitude(profile.longitude.toString());
+            }
+          } catch (e) {}
+        }
+
         const detectionResult: DetectionResult = {
           originalImage: URL.createObjectURL(selectedFile),
           detectedImage: result.detectedVideo || result.detectedImage,
@@ -280,6 +314,8 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
           overallThreatLevel: detectionResult.overallThreatLevel,
           overallThreatScore: detectionResult.overallThreatScore,
           threatCount: detectionResult.threatCount,
+          lat: finalLat || undefined,
+          lng: finalLng || undefined,
         });
 
         // Dispatch event for real-time command center updates
@@ -291,9 +327,9 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
         updateResults(newResults);
         
         // Save to map if coords provided and threat detected
-        if (latitude && longitude && result.overallThreatScore > 0) {
+        if (finalLat && finalLng && result.overallThreatScore > 0) {
           const mainClass = result.detections[0]?.class || "Unknown Contact";
-          storeThreatForMap(parseFloat(latitude), parseFloat(longitude), result.overallThreatScore, mainClass);
+          storeThreatForMap(finalLat, finalLng, result.overallThreatScore, mainClass);
         }
         
         setSelectedFile(null);

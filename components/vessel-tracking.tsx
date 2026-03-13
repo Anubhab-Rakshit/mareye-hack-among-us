@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Map, Activity } from "lucide-react";
 import { getAllThreatObjects } from "@/lib/detection-storage";
+import { LiveTacticalRadar } from "./live-tactical-radar";
 
 interface Detection {
   class: string;
@@ -104,164 +105,17 @@ export default function VesselTracking({
           <Activity className="w-5 h-5 text-slate-400 animate-pulse" />
         </div>
 
-        {/* Radar visualization with unique threat positions */}
-        <div className="relative aspect-square bg-black/50 rounded-lg border border-primary/20 overflow-hidden">
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 400">
-            <defs>
-              <radialGradient id="radarGradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#00d9ff" stopOpacity="0.1" />
-                <stop offset="100%" stopColor="#00d9ff" stopOpacity="0" />
-              </radialGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                <feMerge>
-                  <feMergeNode in="coloredBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* Grid circles */}
-            {[1, 2, 3, 4].map((i) => (
-              <circle
-                key={`circle-${i}`}
-                cx="200"
-                cy="200"
-                r={50 * i}
-                fill="none"
-                stroke="#00d9ff"
-                strokeWidth="0.5"
-                opacity="0.2"
-              />
-            ))}
-
-            {/* Hexagonal grid overlay */}
-            {[0, 1, 2, 3, 4, 5].map((i) => {
-              const angle = (i * 60 * Math.PI) / 180;
-              return (
-                <line
-                  key={`hex-${i}`}
-                  x1="200"
-                  y1="200"
-                  x2={200 + Math.cos(angle) * 150}
-                  y2={200 + Math.sin(angle) * 150}
-                  stroke="#00d9ff"
-                  strokeWidth="0.5"
-                  opacity="0.15"
-                />
-              );
-            })}
-
-            {/* Center crosshair */}
-            <circle cx="200" cy="200" r="3" fill="#00d9ff" opacity="0.5" />
-            <line
-              x1="200"
-              y1="100"
-              x2="200"
-              y2="300"
-              stroke="#00d9ff"
-              strokeWidth="0.5"
-              opacity="0.15"
-            />
-            <line
-              x1="100"
-              y1="200"
-              x2="300"
-              y2="200"
-              stroke="#00d9ff"
-              strokeWidth="0.5"
-              opacity="0.15"
-            />
-
-            {/* Connection lines between threats - dynamic */}
-            {threatObjects.slice(0, 10).map((threat, i) => {
-              const nextThreat = threatObjects[(i + 1) % threatObjects.length];
-              if (!nextThreat) return null;
-              return (
-                <line
-                  key={`connection-${threat.id}`}
-                  x1={200 + (threat.coordinates.x - 50) * 4}
-                  y1={200 + (threat.coordinates.y - 50) * 4}
-                  x2={200 + (nextThreat.coordinates.x - 50) * 4}
-                  y2={200 + (nextThreat.coordinates.y - 50) * 4}
-                  stroke="#00d9ff"
-                  strokeWidth="0.5"
-                  opacity="0.1"
-                  strokeDasharray="3,3"
-                />
-              );
-            })}
-          </svg>
-
-          {/* Threat markers with unique positions */}
-          {threatObjects.map((threat) => {
-            const threatColor = getThreatColor(threat.threat_level);
-            const isSelected = selectedThreatId === threat.id;
-
-            return (
-              <button
-                key={threat.id}
-                onClick={() =>
-                  setSelectedThreatId(isSelected ? null : threat.id)
-                }
-                className="absolute group transition-all"
-                style={{
-                  left: `${threat.coordinates.x}%`,
-                  top: `${threat.coordinates.y}%`,
-                  transform: "translate(-50%, -50%)",
-                  zIndex: isSelected ? 20 : 10,
-                }}
-              >
-                {/* Pulsing outer ring */}
-                <div
-                  className={`absolute inset-0 rounded-full ${isSelected ? "animate-pulse" : "animate-ping"}`}
-                  style={{
-                    backgroundColor: threatColor,
-                    opacity: isSelected ? 0.6 : 0.3,
-                    width: "24px",
-                    height: "24px",
-                    marginLeft: "-12px",
-                    marginTop: "-12px",
-                  }}
-                />
-
-                {/* Center dot with glow */}
-                <div
-                  className="absolute rounded-full transition-all"
-                  style={{
-                    backgroundColor: threatColor,
-                    width: isSelected ? "12px" : "8px",
-                    height: isSelected ? "12px" : "8px",
-                    marginLeft: isSelected ? "-6px" : "-4px",
-                    marginTop: isSelected ? "-6px" : "-4px",
-                    boxShadow: `0 0 ${isSelected ? 20 : 12}px ${threatColor}, 0 0 ${isSelected ? 30 : 20}px ${threatColor}80`,
-                  }}
-                />
-
-                {/* Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover:block bg-slate-900/95 border border-cyan-400/50 rounded px-2 py-1 whitespace-nowrap text-xs text-white z-30 backdrop-blur-sm shadow-lg">
-                  <div className="font-semibold">
-                    {DETECTION_CLASSES[
-                      threat.class as keyof typeof DETECTION_CLASSES
-                    ]?.label || threat.class}
-                  </div>
-                  <div className="text-slate-400">
-                    {(threat.confidence * 100).toFixed(0)}%
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-
-          {/* Empty state */}
-          {threatObjects.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-              <div className="text-center">
-                <Map className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                <p className="text-sm">No threats detected yet</p>
-              </div>
-            </div>
-          )}
+        {/* Radar visualization using shared component */}
+        <div className="flex justify-center bg-black/40 rounded-xl py-8 border border-cyan-500/10 mb-6">
+          <LiveTacticalRadar 
+            threats={threatObjects.map(t => ({
+              id: t.id,
+              class: t.class,
+              confidence: t.confidence,
+              threat_level: t.threat_level
+            }))} 
+            size={Math.min(450, 600)} 
+          />
         </div>
 
         {/* Map stats */}

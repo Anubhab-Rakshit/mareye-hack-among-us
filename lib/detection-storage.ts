@@ -17,6 +17,10 @@ interface StoredDetection {
   overallThreatLevel?: string
   overallThreatScore?: number
   threatCount?: number
+  // Location where the detection was performed (from user profile GPS or manual input)
+  lat?: number
+  lng?: number
+  locationName?: string
 }
 
 const STORAGE_KEY = "mareye_detections"
@@ -54,6 +58,11 @@ export function addDetection(detection: Omit<StoredDetection, "id" | "timestamp"
   const updated = [storedDetection, ...existing]
   saveDetections(updated)
 
+  // Notify other components (like the Designer/Planner) that a new detection is available
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("detectionAdded", { detail: storedDetection }))
+  }
+
   return storedDetection
 }
 
@@ -68,7 +77,7 @@ export function clearAllDetections(): void {
   try {
     localStorage.removeItem(STORAGE_KEY)
   } catch (error) {
-    console.error("[v0] Failed to clear detections from localStorage:", error)
+    console.error(" Failed to clear detections from localStorage:", error)
   }
 }
 

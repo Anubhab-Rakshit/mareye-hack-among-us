@@ -54,6 +54,7 @@ import {
   getThreatStats,
   getAllThreatObjects,
 } from "@/lib/detection-storage";
+import { LiveTacticalRadar } from "@/components/live-tactical-radar";
 import { AIThreatIntelligence } from "@/components/ai-threat-intelligence";
 import { VaultDoorAnimation } from "@/components/vault-door-animation";
 
@@ -98,6 +99,7 @@ interface ThreatStats {
   highThreats: number;
   mediumThreats: number;
   lowThreats: number;
+  totalThreats: number;
   totalObjects: number;
   avgConfidence: number;
   lastDetectionTime: number | null;
@@ -129,6 +131,7 @@ export function ThreatCommandCenter() {
     highThreats: 0,
     mediumThreats: 0,
     lowThreats: 0,
+    totalThreats: 0,
     totalObjects: 0,
     avgConfidence: 0,
     lastDetectionTime: null,
@@ -359,7 +362,8 @@ export function ThreatCommandCenter() {
         highThreats: highCount,
         mediumThreats: mediumCount,
         lowThreats: lowCount,
-        totalObjects: totalObjects || stats.totalObjects || 0,
+        totalThreats: stats.totalThreats || 0,
+        totalObjects: stats.totalThreats || 0,
         avgConfidence,
         lastDetectionTime,
         detectionRate,
@@ -565,7 +569,7 @@ export function ThreatCommandCenter() {
     return `${days}d ago`;
   };
 
-  // Threat Map Visualization Component
+  // Threat Map Visualization Component — uses LiveTacticalRadar canvas
   const ThreatMapVisualization = () => {
     const threatObjects = useMemo(() => {
       if (!mounted) return [];
@@ -576,148 +580,55 @@ export function ThreatCommandCenter() {
       }
     }, [mounted, threatStats.totalDetections]);
 
-    const generateThreatCoordinates = (
-      threatId: string,
-      index: number,
-      total: number,
-    ) => {
-      const hash = threatId
-        .split("")
-        .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const angle =
-        ((hash % 360) + index * (360 / Math.max(total, 1))) * (Math.PI / 180);
-      const radius = 30 + ((hash % 100) / 100) * 30;
-      return {
-        x: 50 + (Math.cos(angle) * radius) / 5,
-        y: 50 + (Math.sin(angle) * radius) / 5,
-      };
-    };
+    // Map to blip format
+    const blips = threatObjects.slice(0, 30).map(t => ({
+      id: t.id,
+      class: t.class,
+      confidence: t.confidence,
+      threat_level: t.threat_level,
+    }));
 
     return (
-      <div className="bg-slate-900/80 backdrop-blur-md border-2 border-blue-500/40 rounded-2xl p-6 shadow-2xl shadow-blue-500/20 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-blue-500/60" />
-        <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-blue-500/60" />
-        <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-blue-500/60" />
-        <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-blue-500/60" />
+      <div className="bg-slate-900/80 backdrop-blur-md border-2 border-cyan-500/30 rounded-2xl p-4 shadow-2xl shadow-cyan-500/10 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-cyan-500/40" />
+        <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-cyan-500/40" />
+        <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-cyan-500/40" />
+        <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-cyan-500/40" />
 
         <div className="relative z-10">
-          <h3 className="text-xl font-black text-blue-300 font-orbitron mb-4 flex items-center gap-3">
-            <Map className="w-5 h-5" />
-            THREAT MAP
+          <h3 className="text-lg font-black text-cyan-300 font-orbitron mb-3 flex items-center gap-3">
+            <Radar className="w-4 h-4 text-cyan-400" />
+            TACTICAL THREAT RADAR
+            <span className="ml-auto text-[9px] font-space-mono text-emerald-400 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse inline-block" />
+              LIVE
+            </span>
           </h3>
 
-          <div className="relative aspect-square bg-slate-950/80 rounded-xl border-2 border-blue-500/30 overflow-hidden">
-            <svg
-              className="absolute inset-0 w-full h-full"
-              viewBox="0 0 200 200"
-            >
-              <defs>
-                <radialGradient id="radarGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.15" />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-                </radialGradient>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
-                  <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
+          <div className="flex justify-center">
+            <LiveTacticalRadar threats={blips} size={280} />
+          </div>
 
-              {/* Grid circles */}
-              {[1, 2, 3, 4].map((i) => (
-                <circle
-                  key={`grid-${i}`}
-                  cx="100"
-                  cy="100"
-                  r={25 * i}
-                  fill="none"
-                  stroke="#3b82f6"
-                  strokeWidth="0.5"
-                  opacity="0.2"
-                />
-              ))}
-
-              {/* Center point */}
-              <circle cx="100" cy="100" r="2" fill="#3b82f6" opacity="0.8" />
-
-              {/* Threat objects */}
-              {threatObjects.slice(0, 20).map((threat, index) => {
-                const coords = generateThreatCoordinates(
-                  threat.id,
-                  index,
-                  threatObjects.length,
-                );
-                const threatColor =
-                  threat.threat_level === "CRITICAL"
-                    ? "#ef4444"
-                    : threat.threat_level === "HIGH"
-                      ? "#f97316"
-                      : threat.threat_level === "MEDIUM"
-                        ? "#eab308"
-                        : "#06b6d4";
-
-                return (
-                  <g key={threat.id}>
-                    <circle
-                      cx={coords.x * 2}
-                      cy={coords.y * 2}
-                      r="3"
-                      fill={threatColor}
-                      opacity="0.8"
-                      filter="url(#glow)"
-                      className="animate-pulse"
-                    />
-                    <circle
-                      cx={coords.x * 2}
-                      cy={coords.y * 2}
-                      r="6"
-                      fill="none"
-                      stroke={threatColor}
-                      strokeWidth="0.5"
-                      opacity="0.4"
-                    />
-                  </g>
-                );
-              })}
-
-              {/* Radar sweep */}
-              <g
-                className="animate-spin"
-                style={{
-                  animationDuration: "4s",
-                  transformOrigin: "100px 100px",
-                }}
-              >
-                <line
-                  x1="100"
-                  y1="100"
-                  x2="200"
-                  y2="100"
-                  stroke="#3b82f6"
-                  strokeWidth="1"
-                  opacity="0.6"
-                />
-              </g>
-            </svg>
-
-            {threatObjects.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <Target className="w-8 h-8 text-blue-400/50 mx-auto mb-2" />
-                  <p className="text-xs text-blue-300/60 font-space-mono">
-                    No Threats Detected
-                  </p>
-                </div>
+          {/* Threat legend */}
+          <div className="mt-3 grid grid-cols-2 gap-1.5 text-[9px] font-space-mono">
+            {[
+              { color: "bg-red-500", label: "CRITICAL" },
+              { color: "bg-orange-500", label: "HIGH" },
+              { color: "bg-yellow-500", label: "MEDIUM" },
+              { color: "bg-emerald-500", label: "LOW" },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <div className={`w-2 h-2 rounded-full ${color} flex-shrink-0`} />
+                <span className="text-slate-400">{label}</span>
               </div>
-            )}
+            ))}
           </div>
 
-          <div className="mt-4 flex items-center justify-between text-xs text-blue-300/60 font-space-mono">
-            <span>Active Threats: {threatObjects.length}</span>
-            <span>Live Tracking</span>
-          </div>
+          {threatObjects.length === 0 && (
+            <p className="text-center text-[10px] text-cyan-400/40 font-space-mono mt-2">
+              Run detection scans to populate radar
+            </p>
+          )}
         </div>
       </div>
     );
@@ -753,7 +664,7 @@ export function ThreatCommandCenter() {
             detections: d.detections || [],
             imageUrl: d.detectedImage,
             originalImage: d.originalImage,
-            fileName: d.originalFileName || "unknown",
+            fileName: "scan_capture",
           }));
 
         // Apply filter

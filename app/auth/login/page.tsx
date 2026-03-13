@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SonarGridBackground } from "@/components/sonar-grid-background";
@@ -35,6 +35,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showAdminTotp, setShowAdminTotp] = useState(false);
+  const [adminTotpCode, setAdminTotpCode] = useState("");
   const [currentTime, setCurrentTime] = useState("");
   const [typedText, setTypedText] = useState("");
 
@@ -213,6 +215,11 @@ export default function LoginPage() {
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (showAdminTotp && (!adminTotpCode || adminTotpCode.length !== 6)) {
+      setError("Please enter a valid 6-digit authenticator code.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -221,18 +228,33 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email, 
+          password,
+          ...(showAdminTotp ? { totpCode: adminTotpCode } : {})
+        }),
       });
       const data = await response.json();
+      
+      if (response.status === 202 && data.requiresTotp) {
+        setShowAdminTotp(true);
+        setLoading(false);
+        return;
+      }
+
       if (!response.ok) throw new Error(data.message || "Login failed");
+      
       if (data.user) localStorage.setItem("profile", JSON.stringify(data.user));
+      setSuccess("Access granted. Redirecting...");
       router.push("/profile");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Login failed. Please try again.",
       );
     } finally {
-      setLoading(false);
+      if (!showAdminTotp || (showAdminTotp && adminTotpCode.length === 6)) {
+        setLoading(false);
+      }
     }
   };
 
@@ -453,6 +475,8 @@ export default function LoginPage() {
             type="button"
             onClick={() => {
               setMethod("password");
+              setShowAdminTotp(false);
+              setAdminTotpCode("");
               setError(null);
               setSuccess(null);
             }}
@@ -642,64 +666,115 @@ export default function LoginPage() {
                 ) : (
                 <>
                 {/* Email field */}
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="email"
-                    className="text-[9px] font-space-mono uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1.5"
-                  >
-                    <Mail className="w-3 h-3" />
-                    Officer Email / Service ID
-                  </label>
-                  <div className="relative group">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500/40 group-focus-within:text-cyan-400/70 transition-colors" />
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="officer@navy.gov.in"
-                      className="w-full rounded-lg border border-cyan-500/15 bg-slate-800/60 pl-10 pr-3 py-2.5 text-sm text-cyan-100 placeholder:text-slate-600 outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20 focus:shadow-lg focus:shadow-cyan-500/5 transition-all font-space-mono"
-                    />
-                    <div className="absolute inset-0 rounded-lg opacity-0 group-focus-within:opacity-100 pointer-events-none border border-cyan-400/20 transition-opacity" />
-                  </div>
-                </div>
-
-                {method === "password" ? (
-                  <div className="space-y-1.5">
+                {!showAdminTotp && (
+                  <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <label
-                      htmlFor="password"
+                      htmlFor="email"
                       className="text-[9px] font-space-mono uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1.5"
                     >
-                      <Lock className="w-3 h-3" />
-                      Access Code
+                      <Mail className="w-3 h-3" />
+                      Officer Email / Service ID
                     </label>
                     <div className="relative group">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500/40 group-focus-within:text-cyan-400/70 transition-colors" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500/40 group-focus-within:text-cyan-400/70 transition-colors" />
                       <input
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
+                        id="email"
+                        name="email"
+                        type="email"
                         required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter access code"
-                        className="w-full rounded-lg border border-cyan-500/15 bg-slate-800/60 pl-10 pr-10 py-2.5 text-sm text-cyan-100 placeholder:text-slate-600 outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20 focus:shadow-lg focus:shadow-cyan-500/5 transition-all font-space-mono"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="officer@navy.gov.in"
+                        className="w-full rounded-lg border border-cyan-500/15 bg-slate-800/60 pl-10 pr-3 py-2.5 text-sm text-cyan-100 placeholder:text-slate-600 outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20 focus:shadow-lg focus:shadow-cyan-500/5 transition-all font-space-mono"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
+                      <div className="absolute inset-0 rounded-lg opacity-0 group-focus-within:opacity-100 pointer-events-none border border-cyan-400/20 transition-opacity" />
                     </div>
                   </div>
+                )}
+
+                {method === "password" ? (
+                  <>
+                    {!showAdminTotp ? (
+                      <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
+                        <label
+                          htmlFor="password"
+                          className="text-[9px] font-space-mono uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1.5"
+                        >
+                          <Lock className="w-3 h-3" />
+                          Access Code
+                        </label>
+                        <div className="relative group">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500/40 group-focus-within:text-cyan-400/70 transition-colors" />
+                          <input
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter access code"
+                            className="w-full rounded-lg border border-cyan-500/15 bg-slate-800/60 pl-10 pr-10 py-2.5 text-sm text-cyan-100 placeholder:text-slate-600 outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20 focus:shadow-lg focus:shadow-cyan-500/5 transition-all font-space-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                        <div className="text-center space-y-2 mb-2">
+                          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-2 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                            <ShieldCheck className="w-6 h-6 text-cyan-400" />
+                          </div>
+                          <h3 className="font-orbitron font-bold text-cyan-100 tracking-widest text-sm">2FA REQUIRED</h3>
+                          <p className="text-[10px] font-space-mono text-slate-400 tracking-wider">
+                            Enter the 6-digit code from Google Authenticator
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-1.5">
+                          <label
+                            htmlFor="adminTotpCode"
+                            className="text-[9px] font-space-mono uppercase tracking-[0.2em] text-cyan-300 flex items-center justify-center gap-1.5"
+                          >
+                            <Fingerprint className="w-3 h-3" />
+                            Authenticator Code
+                          </label>
+                          <input
+                            id="adminTotpCode"
+                            name="adminTotpCode"
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            autoFocus
+                            value={adminTotpCode}
+                            onChange={(e) => setAdminTotpCode(e.target.value.replace(/\D/g, ""))}
+                            placeholder="------"
+                            className="w-full rounded-lg border border-cyan-400/30 bg-slate-900/80 px-4 py-4 text-center text-2xl tracking-[0.5em] font-bold text-cyan-100 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all font-space-mono placeholder:text-slate-600/50"
+                          />
+                        </div>
+                        
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAdminTotp(false);
+                            setAdminTotpCode("");
+                          }}
+                          className="w-full text-[10px] font-space-mono uppercase tracking-widest text-slate-500 hover:text-cyan-400 transition-colors py-2"
+                        >
+                          Cancel / Return
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="space-y-1.5">
                     <label
