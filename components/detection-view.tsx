@@ -65,7 +65,70 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
     }));
   });
   const [activeTab, setActiveTab] = useState("image");
+  const [latitude, setLatitude] = useState<string>("");
+  const [longitude, setLongitude] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper function to calculate Haversine distance (in km)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Helper to store threat for the interactive map
+  const storeThreatForMap = (lat: number, lng: number, threatScore: number, classification: string) => {
+    try {
+      if (typeof window === "undefined") return;
+      
+      const localLocation = localStorage.getItem('userLocation');
+      const parsedLoc = localLocation ? JSON.parse(localLocation) : { lat: 21.0, lng: 88.0 };
+      
+      const distance = calculateDistance(parsedLoc.lat, parsedLoc.lng, lat, lng);
+      
+      // Determine AI Insights based on score & distance
+      let vulnerability = "Medium";
+      let damagePotential = "Moderate";
+      
+      if (threatScore > 85) {
+        vulnerability = distance < 50 ? "Critical (Immediate Interception Required)" : "High (Monitor Track)";
+        damagePotential = distance < 50 ? "Catastrophic damage to hull integrity" : "Significant infrastructure risk";
+      } else if (threatScore > 60) {
+        vulnerability = "High (Deploy Countermeasures)";
+        damagePotential = "Substantial operational disruption";
+      } else {
+        vulnerability = "Low (Routine Observation)";
+        damagePotential = "Minor superficial impact";
+      }
+
+      const newThreat = {
+        id: `threat_${Date.now()}`,
+        lat,
+        lng,
+        distance: distance.toFixed(2),
+        classification,
+        threatScore: Math.round(threatScore),
+        timestamp: new Date().toISOString(),
+        vulnerability,
+        damagePotential
+      };
+
+      const existingThreats = JSON.parse(localStorage.getItem('activeThreats') || '[]');
+      const updatedThreats = [newThreat, ...existingThreats].slice(0, 10); // Keep last 10
+      localStorage.setItem('activeThreats', JSON.stringify(updatedThreats));
+      
+      // Dispatch custom event for Command Center map to refresh
+      window.dispatchEvent(new CustomEvent("threatDetected", { detail: newThreat }));
+    } catch (error) {
+      console.error("Failed to store threat for map", error);
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -139,6 +202,13 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
 
         const newResults = [detectionResult, ...results];
         updateResults(newResults);
+        
+        // Save to map if coords provided and threat detected
+        if (latitude && longitude && result.overallThreatScore > 0) {
+          const mainClass = result.detections[0]?.class || "Unknown Contact";
+          storeThreatForMap(parseFloat(latitude), parseFloat(longitude), result.overallThreatScore, mainClass);
+        }
+        
         setSelectedFile(null);
       } else {
         throw new Error("Detection failed");
@@ -219,6 +289,13 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
 
         const newResults = [detectionResult, ...results];
         updateResults(newResults);
+        
+        // Save to map if coords provided and threat detected
+        if (latitude && longitude && result.overallThreatScore > 0) {
+          const mainClass = result.detections[0]?.class || "Unknown Contact";
+          storeThreatForMap(parseFloat(latitude), parseFloat(longitude), result.overallThreatScore, mainClass);
+        }
+        
         setSelectedFile(null);
       } else {
         throw new Error("Video detection failed");
@@ -351,9 +428,36 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
               </div>
 
               <div className="flex justify-center">
+                <div className="grid grid-cols-2 gap-4 w-full max-w-md mb-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-space-mono text-cyan-400 uppercase tracking-widest block">Threat Latitude</label>
+                    <input 
+                      type="number" 
+                      step="any"
+                      placeholder="e.g. 15.2993"
+                      value={latitude}
+                      onChange={(e) => setLatitude(e.target.value)}
+                      className="w-full bg-slate-900 border border-cyan-500/30 rounded-lg px-3 py-2 text-cyan-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 font-space-mono text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-space-mono text-cyan-400 uppercase tracking-widest block">Threat Longitude</label>
+                    <input 
+                      type="number" 
+                      step="any"
+                      placeholder="e.g. 74.1240"
+                      value={longitude}
+                      onChange={(e) => setLongitude(e.target.value)}
+                      className="w-full bg-slate-900 border border-cyan-500/30 rounded-lg px-3 py-2 text-cyan-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 font-space-mono text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
                 <button
                   onClick={processImage}
-                  disabled={!selectedFile || isProcessing}
+                  disabled={!selectedFile || isProcessing || !latitude || !longitude}
                   className="flex items-center gap-2 px-8 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary to-secondary text-card hover:shadow-lg hover:shadow-primary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {isProcessing ? (
@@ -433,9 +537,36 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
               </div>
 
               <div className="flex justify-center">
+                <div className="grid grid-cols-2 gap-4 w-full max-w-md mb-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-space-mono text-cyan-400 uppercase tracking-widest block">Threat Latitude</label>
+                    <input 
+                      type="number" 
+                      step="any"
+                      placeholder="e.g. 15.2993"
+                      value={latitude}
+                      onChange={(e) => setLatitude(e.target.value)}
+                      className="w-full bg-slate-900 border border-cyan-500/30 rounded-lg px-3 py-2 text-cyan-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 font-space-mono text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-space-mono text-cyan-400 uppercase tracking-widest block">Threat Longitude</label>
+                    <input 
+                      type="number" 
+                      step="any"
+                      placeholder="e.g. 74.1240"
+                      value={longitude}
+                      onChange={(e) => setLongitude(e.target.value)}
+                      className="w-full bg-slate-900 border border-cyan-500/30 rounded-lg px-3 py-2 text-cyan-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 font-space-mono text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
                 <button
                   onClick={processVideo}
-                  disabled={!selectedFile || isProcessing}
+                  disabled={!selectedFile || isProcessing || !latitude || !longitude}
                   className="flex items-center gap-2 px-8 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary to-secondary text-card hover:shadow-lg hover:shadow-primary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {isProcessing ? (

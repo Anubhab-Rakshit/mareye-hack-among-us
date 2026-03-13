@@ -12,6 +12,7 @@ import { PageTransition } from "@/components/page-transition";
 import { BubbleCursor } from "@/components/bubble-cursor";
 import { SubmarineHUD } from "@/components/submarine-hud";
 import { MareyeVoiceAssistant } from "@/components/mareye-voice-assistant";
+import { Toaster } from "sonner";
 
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
@@ -68,6 +69,7 @@ export default function RootLayout({
 
         <Chatbot />
         <MareyeVoiceAssistant />
+        <Toaster richColors position="top-right" theme="dark" />
 
         <Analytics />
       </body>

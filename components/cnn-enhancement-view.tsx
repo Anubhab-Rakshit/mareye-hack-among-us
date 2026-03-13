@@ -88,8 +88,74 @@ export function CNNEnhancementView() {
   const [pressure, setPressure] = useState(4500); // Realistic pressure at depth
   const [temperature, setTemperature] = useState(4);
   const [cpuUsage, setCpuUsage] = useState(45); // CPU usage percentage
+  
+  // Interactive Map State
+  const [latitude, setLatitude] = useState<string>("");
+  const [longitude, setLongitude] = useState<string>("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper function to calculate Haversine distance (in km)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Helper to store threat for the interactive map
+  const storeThreatForMap = (lat: number, lng: number, threatScore: number, classification: string) => {
+    try {
+      if (typeof window === "undefined") return;
+      
+      const localLocation = localStorage.getItem('userLocation');
+      const parsedLoc = localLocation ? JSON.parse(localLocation) : { lat: 21.0, lng: 88.0 };
+      
+      const distance = calculateDistance(parsedLoc.lat, parsedLoc.lng, lat, lng);
+      
+      // Determine AI Insights based on score & distance
+      let vulnerability = "Medium";
+      let damagePotential = "Moderate";
+      
+      if (threatScore > 85) {
+        vulnerability = distance < 50 ? "Critical (Immediate Interception Required)" : "High (Monitor Track)";
+        damagePotential = distance < 50 ? "Catastrophic damage to hull integrity" : "Significant infrastructure risk";
+      } else if (threatScore > 60) {
+        vulnerability = "High (Deploy Countermeasures)";
+        damagePotential = "Substantial operational disruption";
+      } else {
+        vulnerability = "Low (Routine Observation)";
+        damagePotential = "Minor superficial impact";
+      }
+
+      const newThreat = {
+        id: `threat_cnn_${Date.now()}`,
+        lat,
+        lng,
+        distance: distance.toFixed(2),
+        classification,
+        threatScore: Math.round(threatScore),
+        timestamp: new Date().toISOString(),
+        vulnerability,
+        damagePotential
+      };
+
+      const existingThreats = JSON.parse(localStorage.getItem('activeThreats') || '[]');
+      const updatedThreats = [newThreat, ...existingThreats].slice(0, 10); // Keep last 10
+      localStorage.setItem('activeThreats', JSON.stringify(updatedThreats));
+      
+      // Dispatch custom event for Command Center map to refresh
+      window.dispatchEvent(new CustomEvent("threatDetected", { detail: newThreat }));
+    } catch (error) {
+      console.error("Failed to store threat for map", error);
+    }
+  };
 
   useEffect(() => {
     if (isProcessing) {
@@ -217,6 +283,11 @@ export function CNNEnhancementView() {
           setEnhancedPreview(data.enhancedImage);
         } else if (data.enhancedVideo) {
           setEnhancedPreview(data.enhancedVideo);
+        }
+        
+        // Save to map if coords provided (CNN acts like a threat scanner finding anomalies)
+        if (latitude && longitude && activeTab) {
+          storeThreatForMap(parseFloat(latitude), parseFloat(longitude), 88, activeTab === "image" ? "Enhanced Anomaly [Image]" : "Enhanced Anomaly [Video]");
         }
 
         setTimeout(() => {

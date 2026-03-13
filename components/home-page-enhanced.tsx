@@ -67,7 +67,6 @@ export function HomePageEnhanced() {
   const router = useRouter();
   const [activeFeature, setActiveFeature] = useState(0);
   const [heroLoaded, setHeroLoaded] = useState(false);
-  const [hasScrolled, setHasScrolled] = useState(false);
   const parallaxOffset = useParallax(0.3);
   const mouseOffset = useMouseParallax(0.015);
 
@@ -87,15 +86,9 @@ export function HomePageEnhanced() {
       setActiveFeature((prev) => (prev + 1) % 3);
     }, 4000);
 
-    const handleScroll = () => {
-      setHasScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => {
       clearTimeout(timer);
       clearInterval(featureInterval);
-      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -216,7 +209,7 @@ export function HomePageEnhanced() {
               <div
                 className={`transition-all duration-700 delay-300 ${heroLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
               >
-                <p className="text-sm md:text-lg text-cyan-200/70 max-w-xl mx-auto lg:mx-0 leading-relaxed font-space-mono">
+                <p className="text-base md:text-lg text-cyan-200/70 max-w-xl mx-auto lg:mx-0 leading-relaxed font-space-mono">
                   Advanced AI-Powered Platform for Underwater Image Enhancement,
                   Object Detection & Marine Security Operations
                 </p>
@@ -338,23 +331,23 @@ export function HomePageEnhanced() {
                   {/* Pipeline Overlay */}
                   <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-5">
                     <div className="space-y-2">
-                      <h3 className="font-orbitron font-bold text-white text-xs tracking-[0.15em] text-glow-cyan text-center sm:text-left">
+                      <h3 className="font-orbitron font-bold text-white text-xs tracking-[0.15em] text-glow-cyan">
                         AI DEFENSE PIPELINE
                       </h3>
-                      <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between text-[10px] font-space-mono text-cyan-300 space-y-2 sm:space-y-0 sm:space-x-1.5">
-                        <span className="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 w-full sm:w-auto text-center">
+                      <div className="flex items-center justify-between text-[10px] font-space-mono text-cyan-300 space-x-1.5">
+                        <span className="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30">
                           SCAN
                         </span>
-                        <ArrowRight className="hidden sm:block w-3 h-3 text-cyan-500/40" />
-                        <span className="px-2 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 w-full sm:w-auto text-center">
+                        <ArrowRight className="w-3 h-3 text-cyan-500/40" />
+                        <span className="px-2 py-0.5 rounded bg-blue-500/15 border border-blue-500/30">
                           DETECT
                         </span>
-                        <ArrowRight className="hidden sm:block w-3 h-3 text-cyan-500/40" />
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 w-full sm:w-auto text-center">
+                        <ArrowRight className="w-3 h-3 text-cyan-500/40" />
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30">
                           CLASSIFY
                         </span>
-                        <ArrowRight className="hidden sm:block w-3 h-3 text-cyan-500/40" />
-                        <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 w-full sm:w-auto text-center">
+                        <ArrowRight className="w-3 h-3 text-cyan-500/40" />
+                        <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30">
                           RESPOND
                         </span>
                       </div>
@@ -398,7 +391,7 @@ export function HomePageEnhanced() {
 
         {/* Scroll Indicator */}
         <div
-          className={`absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-700 delay-[1200ms] ${heroLoaded && !hasScrolled ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          className={`absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-700 delay-[1200ms] ${heroLoaded ? "opacity-100" : "opacity-0"}`}
         >
           <div className="flex flex-col items-center gap-2 animate-bounce">
             <span className="text-[8px] font-space-mono text-cyan-400/40 uppercase tracking-[0.2em]">
@@ -425,80 +418,92 @@ export function HomePageEnhanced() {
                   Core Features
                 </span>
               </div>
-              <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 gradient-text-ocean font-orbitron px-4">
+              <h2 className="text-4xl md:text-6xl font-black mb-4 gradient-text-ocean font-orbitron">
                 POWERFUL FEATURES
               </h2>
-              <p className="text-sm md:text-base text-cyan-200/50 max-w-2xl mx-auto font-space-mono px-4">
+              <p className="text-base text-cyan-200/50 max-w-2xl mx-auto font-space-mono">
                 Cutting-edge AI technology for marine security operations
               </p>
             </div>
           </RevealSection>
 
-          {/* Feature Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-16">
+          {/* Premium Feature Cards */}
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
             {features.map((feature, index) => (
               <RevealSection key={index} delay={index * 0.15}>
                 <Link href={feature.href}>
                   <div
                     onMouseEnter={() => setActiveFeature(index)}
-                    className={`group relative glass-card rounded-2xl p-7 cursor-pointer transition-all duration-500 hover-lift h-full ${
+                    className={`group relative cursor-pointer h-full transition-all duration-700 transform ${
                       activeFeature === index
-                        ? "border-cyan-400/50 shadow-lg shadow-cyan-500/15"
-                        : "hover:border-cyan-400/30"
+                        ? "scale-105"
+                        : "hover:scale-102"
                     }`}
                   >
-                    {/* Hover Glow */}
-                    <div
-                      className={`absolute inset-0 rounded-2xl transition-opacity duration-500 ${
+                    {/* Premium Card Background */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-slate-900/60 via-slate-900/40 to-slate-900/20 backdrop-blur-xl border border-cyan-500/30 group-hover:border-cyan-400/60 transition-all duration-500" />
+                    
+                    {/* Animated gradient border */}
+                    <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                      feature.color === "cyan"
+                        ? "bg-gradient-to-br from-cyan-500/20 to-transparent"
+                        : feature.color === "emerald"
+                          ? "bg-gradient-to-br from-emerald-500/20 to-transparent"
+                          : "bg-gradient-to-br from-blue-500/20 to-transparent"
+                    }`} />
+
+                    {/* Card Content */}
+                    <div className="relative z-10 p-8 h-full flex flex-col space-y-6">
+                      {/* Icon Container - Premium */}
+                      <div className={`w-16 h-16 rounded-xl flex items-center justify-center border-2 transition-all duration-300 group-hover:scale-110 ${
                         activeFeature === index
-                          ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100"
+                          ? "scale-110"
+                          : ""
                       } ${
                         feature.color === "cyan"
-                          ? "bg-gradient-to-br from-cyan-500/10 to-transparent"
+                          ? "bg-gradient-to-br from-cyan-500/20 to-cyan-600/5 border-cyan-500/50 group-hover:border-cyan-400/80 group-hover:shadow-lg group-hover:shadow-cyan-500/30"
                           : feature.color === "emerald"
-                            ? "bg-gradient-to-br from-emerald-500/10 to-transparent"
-                            : "bg-gradient-to-br from-blue-500/10 to-transparent"
-                      }`}
-                    />
-
-                    <div className="relative z-10">
-                      {/* Icon */}
-                      <div
-                        className={`w-14 h-14 mb-5 rounded-xl flex items-center justify-center border transition-all duration-300 ${
-                          activeFeature === index
-                            ? "scale-110"
-                            : "group-hover:scale-105"
-                        } ${
-                          feature.color === "cyan"
-                            ? "bg-cyan-500/10 border-cyan-500/25"
-                            : feature.color === "emerald"
-                              ? "bg-emerald-500/10 border-emerald-500/25"
-                              : "bg-blue-500/10 border-blue-500/25"
-                        }`}
-                      >
+                            ? "bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border-emerald-500/50 group-hover:border-emerald-400/80 group-hover:shadow-lg group-hover:shadow-emerald-500/30"
+                            : "bg-gradient-to-br from-blue-500/20 to-blue-600/5 border-blue-500/50 group-hover:border-blue-400/80 group-hover:shadow-lg group-hover:shadow-blue-500/30"
+                      }`}>
                         <feature.icon
-                          className={`w-7 h-7 ${
+                          className={`w-8 h-8 group-hover:scale-125 transition-transform duration-300 ${
                             feature.color === "cyan"
-                              ? "text-cyan-400"
+                              ? "text-cyan-300"
                               : feature.color === "emerald"
-                                ? "text-emerald-400"
-                                : "text-blue-400"
+                                ? "text-emerald-300"
+                                : "text-blue-300"
                           }`}
                         />
                       </div>
 
-                      {/* Highlight Tags */}
-                      <div className="flex flex-wrap gap-1.5 mb-3">
+                      {/* Title & Description */}
+                      <div>
+                        <h3 className={`text-xl font-orbitron font-bold mb-2 group-hover:text-cyan-100 transition-colors duration-300 ${
+                          feature.color === "cyan"
+                            ? "text-cyan-200"
+                            : feature.color === "emerald"
+                              ? "text-emerald-200"
+                              : "text-blue-200"
+                        }`}>
+                          {feature.title}
+                        </h3>
+                        <p className="text-sm text-cyan-200/60 group-hover:text-cyan-200/80 transition-colors font-space-mono leading-relaxed">
+                          {feature.description}
+                        </p>
+                      </div>
+
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-cyan-500/10">
                         {feature.highlights.map((h, idx) => (
                           <span
                             key={idx}
-                            className={`px-2 py-0.5 rounded text-[10px] font-space-mono font-bold ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-space-mono font-bold transition-all duration-300 group-hover:scale-105 ${
                               feature.color === "cyan"
-                                ? "bg-cyan-500/10 text-cyan-300/70 border border-cyan-500/20"
+                                ? "bg-gradient-to-r from-cyan-500/20 to-cyan-600/10 text-cyan-300 border border-cyan-500/30 group-hover:border-cyan-400/60 group-hover:bg-cyan-500/30"
                                 : feature.color === "emerald"
-                                  ? "bg-emerald-500/10 text-emerald-300/70 border border-emerald-500/20"
-                                  : "bg-blue-500/10 text-blue-300/70 border border-blue-500/20"
+                                  ? "bg-gradient-to-r from-emerald-500/20 to-emerald-600/10 text-emerald-300 border border-emerald-500/30 group-hover:border-emerald-400/60 group-hover:bg-emerald-500/30"
+                                  : "bg-gradient-to-r from-blue-500/20 to-blue-600/10 text-blue-300 border border-blue-500/30 group-hover:border-blue-400/60 group-hover:bg-blue-500/30"
                             }`}
                           >
                             {h}
@@ -506,33 +511,12 @@ export function HomePageEnhanced() {
                         ))}
                       </div>
 
-                      <h3 className="text-xl font-black text-white mb-2 font-orbitron group-hover:text-cyan-100 transition-colors">
-                        {feature.title}
-                      </h3>
-                      <p className="text-sm text-cyan-200/50 leading-relaxed mb-4">
-                        {feature.description}
-                      </p>
-
-                      <div className="flex items-center text-cyan-400/60 group-hover:text-cyan-300 text-xs font-space-mono font-bold uppercase tracking-wider transition-colors">
-                        <span>Explore</span>
-                        <ArrowRight className="w-3 h-3 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                      {/* Premium CTA Arrow */}
+                      <div className="mt-auto pt-4 flex items-center text-cyan-400 group-hover:text-cyan-300 transition-colors">
+                        <span className="text-xs font-orbitron font-bold uppercase tracking-wider">Explore</span>
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
-
-                    {/* Active Dot */}
-                    {activeFeature === index && (
-                      <div className="absolute top-4 right-4">
-                        <div
-                          className={`w-2 h-2 rounded-full animate-pulse ${
-                            feature.color === "cyan"
-                              ? "bg-cyan-400"
-                              : feature.color === "emerald"
-                                ? "bg-emerald-400"
-                                : "bg-blue-400"
-                          }`}
-                        />
-                      </div>
-                    )}
                   </div>
                 </Link>
               </RevealSection>
@@ -576,10 +560,10 @@ export function HomePageEnhanced() {
                   Solutions
                 </span>
               </div>
-              <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 gradient-text-ocean font-orbitron px-4">
+              <h2 className="text-4xl md:text-6xl font-black mb-4 gradient-text-ocean font-orbitron">
                 AI-POWERED SOLUTIONS
               </h2>
-              <p className="text-sm md:text-base text-cyan-200/50 max-w-2xl mx-auto font-space-mono px-4">
+              <p className="text-base text-cyan-200/50 max-w-2xl mx-auto font-space-mono">
                 Advanced platform combining CNN image processing and object
                 detection
               </p>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -43,6 +43,8 @@ interface ProfileData {
     usedToday?: number;
     totalUsed?: number;
   };
+  latitude?: string;
+  longitude?: string;
 }
 
 export default function ProfilePage() {
@@ -140,7 +142,15 @@ export default function ProfilePage() {
 
   const handleEdit = () => {
     setIsEditing(true);
-    setEditData(profile || {});
+    // Load local coordinates if available
+    const localLocation = localStorage.getItem('userLocation');
+    const parsedLoc = localLocation ? JSON.parse(localLocation) : null;
+    
+    setEditData({
+      ...profile,
+      latitude: parsedLoc?.lat || profile?.latitude || "",
+      longitude: parsedLoc?.lng || profile?.longitude || "",
+    });
   };
   const handleCancel = () => {
     setIsEditing(false);
@@ -148,6 +158,17 @@ export default function ProfilePage() {
   };
   const handleSave = async () => {
     setIsEditing(false);
+    
+    // Save coordinates to local storage for the Map component
+    if (editData.latitude && editData.longitude) {
+      localStorage.setItem('userLocation', JSON.stringify({
+        lat: parseFloat(editData.latitude),
+        lng: parseFloat(editData.longitude)
+      }));
+    }
+    
+    // Optimistically update UI
+    setProfile(prev => prev ? { ...prev, ...editData } : editData as ProfileData);
   };
 
   function logout() {
@@ -725,6 +746,67 @@ export default function ProfilePage() {
                           {profile.dob || "-"}
                         </div>
                       )}
+                    </div>
+                    
+                    {/* Location Settings */}
+                    <div className="col-span-1 md:col-span-2 mt-4">
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-cyan-500/10">
+                        <Radar className="w-4 h-4 text-cyan-400" />
+                        <h4 className="text-[10px] font-orbitron text-cyan-300 tracking-widest uppercase">Global Positioning Offset</h4>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-space-mono text-amber-400/80 uppercase tracking-widest flex items-center gap-1.5">
+                            Latitude
+                          </label>
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="e.g. 22.5726"
+                              value={editData.latitude || ""}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  latitude: e.target.value,
+                                })
+                              }
+                              className="w-full rounded-lg border border-amber-500/20 bg-slate-900/60 px-3 py-2.5 text-sm text-amber-100 outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20 focus:shadow-lg focus:shadow-amber-500/10 transition-all font-space-mono placeholder:text-slate-600"
+                            />
+                          ) : (
+                            <div className="px-3 py-2.5 bg-slate-900/40 border border-slate-700/50 rounded-lg text-sm text-slate-300 font-space-mono">
+                              {profile.latitude || "(Not set)"}
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-space-mono text-amber-400/80 uppercase tracking-widest flex items-center gap-1.5">
+                            Longitude
+                          </label>
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="e.g. 88.3639"
+                              value={editData.longitude || ""}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  longitude: e.target.value,
+                                })
+                              }
+                              className="w-full rounded-lg border border-amber-500/20 bg-slate-900/60 px-3 py-2.5 text-sm text-amber-100 outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20 focus:shadow-lg focus:shadow-amber-500/10 transition-all font-space-mono placeholder:text-slate-600"
+                            />
+                          ) : (
+                            <div className="px-3 py-2.5 bg-slate-900/40 border border-slate-700/50 rounded-lg text-sm text-slate-300 font-space-mono">
+                              {profile.longitude || "(Not set)"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="mt-2 text-[8px] font-space-mono text-slate-500 leading-relaxed">
+                        Setting coordinates automatically routes detected threats relative to this tactical position in the Command Center map.
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -87,23 +87,46 @@
     position: relative;
   }
 
-  /* Typography hierarchy with tactical fonts */
-  h1,
-  h2,
-  h3,
+  /* Typography hierarchy with tactical fonts - Premium */
+  h1 {
+    @apply font-orbitron font-black tracking-wider text-white;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  
+  h2 {
+    @apply font-orbitron font-bold tracking-wider text-white;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    font-size: clamp(1.875rem, 5vw, 3rem);
+  }
+  
+  h3 {
+    @apply font-orbitron font-bold tracking-wide text-cyan-100;
+    letter-spacing: 0;
+    line-height: 1.3;
+  }
+  
   h4,
   h5,
   h6 {
-    @apply font-orbitron font-bold tracking-widest;
+    @apply font-orbitron font-semibold tracking-widest text-cyan-200;
+    line-height: 1.4;
   }
 
-  /* Radar sweep animation */
+  p {
+    @apply leading-relaxed text-cyan-100/80;
+  }
+
+  /* Radar sweep animation - refined for international standards */
   @keyframes radar-sweep {
     from {
       transform: translate(-50%, -50%) rotate(0deg);
+      opacity: 0.9;
     }
     to {
       transform: translate(-50%, -50%) rotate(360deg);
+      opacity: 0.9;
     }
   }
 
@@ -197,13 +220,13 @@
     @apply bg-slate-900/30 backdrop-blur-2xl border border-cyan-500/20 rounded-xl;
   }
 
-  /* Holographic button base */
+  /* Holographic button base - refined for premium feel */
   .tactical-button {
     @apply relative font-space-mono font-bold text-sm uppercase tracking-wider py-3 px-6 rounded-lg
            bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/50 
            text-cyan-100 hover:text-cyan-50 transition-all duration-300
-           hover:shadow-lg hover:shadow-cyan-500/30 hover:border-cyan-300/80
-           active:scale-95 overflow-hidden;
+           hover:shadow-lg hover:shadow-cyan-500/40 hover:border-cyan-300/80
+           active:scale-95 overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-400/50;
   }
 
   /* Sonar pulse effect utility */
@@ -377,7 +400,7 @@
     border-color: rgba(6, 182, 212, 0.6);
   }
 
-  /* Shimmer sweep on hover */
+  /* Shimmer sweep on hover - enhanced */
   .hover-shimmer {
     position: relative;
     overflow: hidden;
@@ -390,15 +413,32 @@
       120deg,
       transparent 0%,
       transparent 30%,
-      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.1) 50%,
       transparent 70%,
       transparent 100%
     );
     transform: translateX(-100%);
-    transition: transform 0.6s ease;
+    transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .hover-shimmer:hover::after {
     transform: translateX(100%);
+  }
+
+  /* Smooth scale on hover - new */
+  .hover-scale {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+
+  /* Subtle border pulse - new */
+  .hover-border-pulse {
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .hover-border-pulse:hover {
+    border-color: rgba(6, 182, 212, 0.8);
+    box-shadow: inset 0 0 12px rgba(6, 182, 212, 0.1);
   }
 
   /* ====== TACTICAL GLOW EFFECTS ====== */
@@ -596,6 +636,42 @@
 
   .animate-data-stream {
     animation: data-stream 4s linear infinite;
+  }
+
+  /* Enhanced focus states for inputs and interactive elements */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid rgba(6, 182, 212, 0.5);
+    outline-offset: 2px;
+  }
+
+  /* Smooth color transitions on state changes */
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease,
+                box-shadow 0.3s ease;
+  }
+
+  /* Premium link hover effect */
+  a:not(.no-underline) {
+    position: relative;
+  }
+  a:not(.no-underline)::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: currentColor;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  a:not(.no-underline):hover::after {
+    width: 100%;
   }
 
   /* Tactical flicker */
@@ -1014,6 +1090,124 @@ html {
   background: rgba(6, 182, 212, 0.2);
   border: 1px solid rgba(6, 182, 212, 0.5);
   color: #67e8f9;
+}
+
+/* ====== ACCESSIBILITY - REDUCED MOTION ====== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ====== PREMIUM NEW ANIMATIONS ====== */
+
+/* Premium slide down entrance */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.8s ease-out forwards;
+}
+
+/* Premium fade in blur effect */
+@keyframes fade-in-blur {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+.animate-fade-in-blur {
+  animation: fade-in-blur 0.6s ease-out;
+}
+
+/* Premium scale pulse */
+@keyframes scale-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.animate-scale-pulse {
+  animation: scale-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Premium glow effect */
+@keyframes glow-pulse-new {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3), 0 0 40px rgba(6, 182, 212, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(6, 182, 212, 0.5), 0 0 60px rgba(6, 182, 212, 0.2);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse-new 3s ease-in-out infinite;
+}
+
+/* Premium tilt effect on hover */
+.hover-tilt {
+  perspective: 1000px;
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.hover-tilt:hover {
+  transform: rotateX(5deg) rotateY(-5deg) scale(1.02);
+}
+
+/* Premium blur-in animation */
+@keyframes blur-in {
+  0% {
+    opacity: 0;
+    filter: blur(20px);
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+.animate-blur-in {
+  animation: blur-in 0.8s ease-out;
+}
+
+/* Duration 4s pulse for gradients */
+@keyframes pulse-4s {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse.duration-4000 {
+  animation: pulse-4s 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ====== CUSTOM SCROLLBAR ====== */
