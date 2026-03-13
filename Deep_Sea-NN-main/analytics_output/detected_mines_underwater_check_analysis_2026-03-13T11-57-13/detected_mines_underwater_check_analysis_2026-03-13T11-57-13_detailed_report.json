@@ -1,0 +1,21 @@
+{
+  "image_name": "detected_mines_underwater_check",
+  "timestamp": "2026-03-13T11:57:13.285Z",
+  "file_paths": {
+    "original": "/Users/anubhabrakshit/Projects/Hackathon/mareye-work/temp/input/detected_mines_underwater_check.jpeg",
+    "enhanced": "/Users/anubhabrakshit/Projects/Hackathon/mareye-work/temp/output/enhanced_detected_mines_underwater_check.jpeg"
+  },
+  "basic_metrics": {
+    "psnr": 14.568640284485404,
+    "ssim": 0.655407727654671,
+    "uiqm_original": 90.97962214856678,
+    "uiqm_enhanced": 136.10030685573273,
+    "uiqm_improvement": 45.12068470716595
+  },
+  "quality_assessment": {
+    "psnr_quality": "Poor",
+    "ssim_quality": "Moderate similarity",
+    "uiqm_quality": "Improved",
+    "overall_assessment": "Enhancement successful"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "image_name": "detection_cnn_test_mareye-1",
+  "timestamp": "2026-03-13T11:58:07.752Z",
+  "file_paths": {
+    "original": "/Users/anubhabrakshit/Projects/Hackathon/mareye-work/temp/input/detection_cnn_test_mareye-1.jpg",
+    "enhanced": "/Users/anubhabrakshit/Projects/Hackathon/mareye-work/temp/output/enhanced_detection_cnn_test_mareye-1.jpg"
+  },
+  "basic_metrics": {
+    "psnr": 18.889531653282987,
+    "ssim": 0.89404198912269,
+    "uiqm_original": 49.75923320808991,
+    "uiqm_enhanced": 47.24456714310712,
+    "uiqm_improvement": -2.5146660649827908
+  },
+  "quality_assessment": {
+    "psnr_quality": "Moderate",
+    "ssim_quality": "High similarity",
+    "uiqm_quality": "No improvement",
+    "overall_assessment": "Enhancement failed"
+  }
+}
