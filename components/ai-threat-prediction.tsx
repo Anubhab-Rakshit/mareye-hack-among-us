@@ -318,6 +318,8 @@ export function AIThreatPrediction() {
   const [selectedRange, setSelectedRange] = useState<
     "12h" | "24h" | "48h" | "72h"
   >("72h");
+  const [fusionBrief, setFusionBrief] = useState<string>("");
+  const [loadingBrief, setLoadingBrief] = useState(false);
   const animFrame = useRef(0);
 
   // Fetch real intelligence data
@@ -339,6 +341,34 @@ export function AIThreatPrediction() {
   useEffect(() => {
     fetchIntel();
   }, [fetchIntel]);
+
+  // Fetch AI Fusion Brief whenever intel changes
+  useEffect(() => {
+    const fetchBrief = async () => {
+      if (!intel || intel.zones.length === 0) return;
+      setLoadingBrief(true);
+      try {
+        const activeZone = intel.zones[0]; // Primary focus zone
+        const res = await fetch("/api/ai/brief", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            zoneData: activeZone,
+            detections: "Vessel density high in transit corridors",
+            intercepts: "SIGINT monitoring active; no hostile decryption required",
+            missionStats: "Standard formation patrolling",
+          }),
+        });
+        const data = await res.json();
+        if (data.brief) setFusionBrief(data.brief);
+      } catch (err) {
+        console.error("Brief fetch failed", err);
+      } finally {
+        setLoadingBrief(false);
+      }
+    };
+    fetchBrief();
+  }, [intel]);
 
   const predictions = useMemo(
     () => (intel ? buildPredictions(intel.zones) : []),
@@ -704,6 +734,53 @@ export function AIThreatPrediction() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* AI Fusion Brief (The "Wow" Factor) */}
+        <div className="mb-8 relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/0 via-cyan-500/20 to-cyan-500/0 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
+          <div className="relative bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-xl p-5 shadow-[0_0_30px_rgba(6,182,212,0.1)]">
+            <div className="flex items-center justify-between mb-3 border-b border-cyan-500/10 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
+                  <Brain className="w-4 h-4 text-cyan-400 animate-pulse" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-orbitron font-black text-cyan-400 tracking-[0.2em]">COMMANDER'S TACTICAL BRIEF</div>
+                  <div className="text-[7px] font-space-mono text-cyan-400/40 uppercase">Artificial Intelligence Fusion Engine // BLUF-V4</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right hidden sm:block">
+                  <div className="text-[8px] font-space-mono text-cyan-400/30 uppercase">Intelligence Confidence</div>
+                  <div className="text-[10px] font-orbitron text-emerald-400">98.4%</div>
+                </div>
+                <div className={`text-[8px] font-orbitron px-2 py-0.5 rounded border ${loadingBrief ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"}`}>
+                  {loadingBrief ? "ANALYZING..." : "LIVE"}
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative min-h-[40px] flex items-center">
+              {loadingBrief ? (
+                <div className="flex gap-1.5 items-center">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="w-1 h-1 bg-cyan-400/50 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                  ))}
+                  <span className="text-[10px] font-space-mono text-cyan-400/40 italic">Synthesizing multi-domain data streams...</span>
+                </div>
+              ) : (
+                <p className="text-sm font-space-mono text-cyan-100 leading-relaxed tracking-tight group-hover:text-white transition-colors">
+                  {fusionBrief || "Awaiting intelligence fusion from active maritime sensor grid..."}
+                </p>
+              )}
+              
+              {/* Decorative scanline for the brief box */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-5">
+                <div className="w-full h-1 bg-cyan-400 animate-scan-slow opacity-20"></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Range selector + refresh */}

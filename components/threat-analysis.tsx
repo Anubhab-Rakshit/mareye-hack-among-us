@@ -2,7 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { Clock, AlertTriangle, TrendingDown } from "lucide-react";
-import { loadDetections } from "@/lib/detection-storage";
+import {
+  loadDetections,
+  normalizeOverallThreatScore,
+} from "@/lib/detection-storage";
 
 interface Detection {
   class: string;
@@ -61,7 +64,7 @@ export default function ThreatAnalysis({
               : "Anomaly Detected",
         severity: result.overallThreatLevel || "MEDIUM",
         description: `${result.detections.length} object(s) detected with threat level ${result.overallThreatLevel}`,
-        confidence: result.overallThreatScore || 0,
+        confidence: normalizeOverallThreatScore(result.overallThreatScore) || 0,
         detectionCount: result.detections.length,
         image: result.detectedImage,
         detections: result.detections,
@@ -190,7 +193,7 @@ export default function ThreatAnalysis({
                           Avg Confidence
                         </p>
                         <p className="text-lg font-bold text-secondary">
-                          {(threat.confidence * 100).toFixed(0)}%
+                          {Math.round(threat.confidence)}%
                         </p>
                       </div>
                     </div>

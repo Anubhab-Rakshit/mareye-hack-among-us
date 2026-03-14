@@ -203,6 +203,7 @@ export function TacticalMissionPlanner() {
   const [wpType, setWpType] = useState<Waypoint["type"]>("waypoint");
   const [missionProfile, setMissionProfile] = useState<MissionProfile>(MISSION_PROFILES[0]);
   const [simulating, setSimulating] = useState(false);
+  const [simulatingSwarm, setSimulatingSwarm] = useState(false);
   const [simProgress, setSimProgress] = useState(0);
   const [showMarkers, setShowMarkers] = useState(true);
   const [showShipping, setShowShipping] = useState(true);
@@ -731,14 +732,21 @@ export function TacticalMissionPlanner() {
     return () => clearInterval(iv);
   }, [simulating, simPath.length]);
 
-  // Sim marker movement — works for both manual waypoints and AI path
+  // Swarm and single ship marker logic
+  const swarmMarkersRef = useRef<L.Marker[]>([]);
+  const swarmTrailsRef = useRef<L.Polyline[]>([]);
+
   useEffect(() => {
     if (!mapRef.current) return;
 
     if (simMarkerRef.current) { mapRef.current.removeLayer(simMarkerRef.current); simMarkerRef.current = null; }
     if (simTrailRef.current) { mapRef.current.removeLayer(simTrailRef.current); simTrailRef.current = null; }
+    swarmMarkersRef.current.forEach(m => mapRef.current?.removeLayer(m));
+    swarmTrailsRef.current.forEach(t => mapRef.current?.removeLayer(t));
+    swarmMarkersRef.current = [];
+    swarmTrailsRef.current = [];
 
-    if (!simulating || simPath.length < 2) return;
+    if ((!simulating && !simulatingSwarm) || simPath.length < 2) return;
 
     const { cumDist, totalDist } = simDistances;
     const targetDist = simProgress * totalDist;
@@ -754,14 +762,14 @@ export function TacticalMissionPlanner() {
     const legLen = cumDist[legIdx + 1] - legStart;
     const legProg = legLen > 0 ? (targetDist - legStart) / legLen : 0;
 
-    const lat = simPath[legIdx][0] + (simPath[legIdx + 1][0] - simPath[legIdx][0]) * legProg;
-    const lng = simPath[legIdx][1] + (simPath[legIdx + 1][1] - simPath[legIdx][1]) * legProg;
+    const baseLat = simPath[legIdx][0] + (simPath[legIdx + 1][0] - simPath[legIdx][0]) * legProg;
+    const baseLng = simPath[legIdx][1] + (simPath[legIdx + 1][1] - simPath[legIdx][1]) * legProg;
 
     // Compute bearing for ship heading
     const nextLat = simPath[Math.min(legIdx + 1, simPath.length - 1)][0];
     const nextLng = simPath[Math.min(legIdx + 1, simPath.length - 1)][1];
-    const dLng = ((nextLng - lng) * Math.PI) / 180;
-    const lat1R = (lat * Math.PI) / 180;
+    const dLng = ((nextLng - baseLng) * Math.PI) / 180;
+    const lat1R = (baseLat * Math.PI) / 180;
     const lat2R = (nextLat * Math.PI) / 180;
     const bearing = (Math.atan2(Math.sin(dLng) * Math.cos(lat2R), Math.cos(lat1R) * Math.sin(lat2R) - Math.sin(lat1R) * Math.cos(lat2R) * Math.cos(dLng)) * 180) / Math.PI;
 
@@ -773,41 +781,80 @@ export function TacticalMissionPlanner() {
       currentRisk = riskSegs[legIdx]?.risk ?? "low";
     }
     const riskColorMap: Record<string, string> = { low: "#10b981", medium: "#eab308", high: "#f97316", critical: "#ef4444", LOW: "#10b981", MEDIUM: "#eab308", HIGH: "#f97316", CRITICAL: "#ef4444" };
-    const shipColor = isAiSim ? (riskColorMap[currentRisk] ?? "#f59e0b") : "#10b981";
 
-    // Trail (completed path)
-    const trailPts: [number, number][] = [];
-    for (let i = 0; i <= legIdx; i++) trailPts.push(simPath[i]);
-    trailPts.push([lat, lng]);
-    simTrailRef.current = L.polyline(trailPts, { color: shipColor, weight: 3, opacity: 0.6 }).addTo(mapRef.current);
-
-    // Ship marker with heading arrow
-    simMarkerRef.current = L.marker([lat, lng], {
-      icon: L.divIcon({
-        className: "",
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
-        html: `<div style="width:28px;height:28px;position:relative;transform:rotate(${bearing}deg)">
-          <div style="position:absolute;inset:0;background:${shipColor}33;border-radius:50%;box-shadow:0 0 16px ${shipColor}66,0 0 32px ${shipColor}22;animation:pulse 1.5s infinite"></div>
-          <div style="position:absolute;inset:4px;background:${shipColor};border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center">
-            <div style="width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:6px solid #fff;margin-top:-2px"></div>
-          </div>
-        </div>`,
-      }),
-      zIndexOffset: 2000,
-    }).addTo(mapRef.current);
-
-    // Add ship info tooltip
     const distCovered = (targetDist / 1852).toFixed(0);
     const distTotal = (totalDist / 1852).toFixed(0);
-    simMarkerRef.current.bindTooltip(`
-      <div style="font-family:monospace;font-size:8px">
-        <div style="color:${shipColor};font-weight:bold">${isAiSim ? "AI NAV" : "MANUAL"} — ${missionProfile.vessel.split("(")[0].trim()}</div>
-        <div style="color:#94a3b8">${distCovered} / ${distTotal} nm</div>
-        <div style="color:${shipColor}">${currentRisk.toUpperCase()} RISK</div>
-      </div>
-    `, { className: "tactical-tooltip", direction: "top", permanent: true, offset: [0, -18] });
-  }, [simulating, simProgress, simPath, simDistances, simOnAiPath, aiPathStats, missionProfile]);
+
+    if (simulatingSwarm) {
+       // --- SWARM LOGIC ---
+       const NUM_DRONES = 5;
+       const shipColor = "#06b6d4"; // Cyan for drones
+       
+       for (let d = 0; d < NUM_DRONES; d++) {
+           // Drones fan out up to 0.5 degrees in latitude/longitude depending on progress
+           const fanFactor = Math.pow(simProgress, 3) * 0.5; 
+           const angle = (d / NUM_DRONES) * Math.PI * 2 + (simProgress * Math.PI); // rotate slightly
+           const dLat = baseLat + Math.cos(angle) * fanFactor;
+           const dLng = baseLng + Math.sin(angle) * fanFactor;
+
+           const marker = L.marker([dLat, dLng], {
+            icon: L.divIcon({
+              className: "",
+              iconSize: [20, 20],
+              iconAnchor: [10, 10],
+              html: `<div style="width:20px;height:20px;position:relative;transform:rotate(${bearing}deg)">
+                <div style="position:absolute;inset:0;background:${shipColor}44;border-radius:50%;box-shadow:0 0 8px ${shipColor}66;animation:pulse 0.5s infinite"></div>
+                <div style="position:absolute;inset:4px;background:${shipColor};border-radius:50%;border:1px solid #fff;display:flex;align-items:center;justify-content:center">
+                   <div style="width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-bottom:4px solid #fff;margin-top:-1px"></div>
+                </div>
+              </div>`,
+            }),
+            zIndexOffset: 2000,
+          }).addTo(mapRef.current);
+          
+          marker.bindTooltip(`
+             <div style="font-family:monospace;font-size:8px">
+              <div style="color:${shipColor};font-weight:bold">UCAV SWARM ALPHA-${d+1}</div>
+              <div style="color:#94a3b8">Formation: Perimeter Defend</div>
+              <div style="color:#ef4444;margin-top:2px">Weapons Hot</div>
+            </div>
+          `, { className: "tactical-tooltip", direction: "right", permanent: d === 0 });
+
+          swarmMarkersRef.current.push(marker);
+       }
+    } else {
+      // --- REGULAR SHIP LOGIC ---
+      const trailPts: [number, number][] = [];
+      for (let i = 0; i <= legIdx; i++) trailPts.push(simPath[i]);
+      trailPts.push([baseLat, baseLng]);
+      
+      const realShipColor = isAiSim ? (riskColorMap[currentRisk] ?? "#f59e0b") : "#10b981";
+      simTrailRef.current = L.polyline(trailPts, { color: realShipColor, weight: 3, opacity: 0.6 }).addTo(mapRef.current);
+  
+      simMarkerRef.current = L.marker([baseLat, baseLng], {
+        icon: L.divIcon({
+          className: "",
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+          html: `<div style="width:28px;height:28px;position:relative;transform:rotate(${bearing}deg)">
+            <div style="position:absolute;inset:0;background:${realShipColor}33;border-radius:50%;box-shadow:0 0 16px ${realShipColor}66,0 0 32px ${realShipColor}22;animation:pulse 1.5s infinite"></div>
+            <div style="position:absolute;inset:4px;background:${realShipColor};border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center">
+              <div style="width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:6px solid #fff;margin-top:-2px"></div>
+            </div>
+          </div>`,
+        }),
+        zIndexOffset: 2000,
+      }).addTo(mapRef.current);
+  
+      simMarkerRef.current.bindTooltip(`
+        <div style="font-family:monospace;font-size:8px">
+          <div style="color:${realShipColor};font-weight:bold">${isAiSim ? "AI NAV" : "MANUAL"} — ${missionProfile.vessel.split("(")[0].trim()}</div>
+          <div style="color:#94a3b8">${distCovered} / ${distTotal} nm</div>
+          <div style="color:${realShipColor}">${currentRisk.toUpperCase()} RISK</div>
+        </div>
+      `, { className: "tactical-tooltip", direction: "top", permanent: true, offset: [0, -18] });
+    }
+  }, [simulating, simulatingSwarm, simProgress, simPath, simDistances, missionProfile, aiPathStats, simOnAiPath]);
 
   // ── Actions ──
   const deleteWp = (id: string) => {
@@ -1038,7 +1085,7 @@ export function TacticalMissionPlanner() {
                   </>
                 )}
                 {simulating && (
-                  <button onClick={() => { setSimulating(false); setSimProgress(0); setSimOnAiPath(false); }}
+                  <button onClick={() => { setSimulating(false); setSimulatingSwarm(false); setSimProgress(0); setSimOnAiPath(false); }}
                     className="flex items-center gap-1 px-2.5 py-1 rounded text-[7px] font-orbitron bg-slate-900/70 text-red-400 border border-red-500/20 hover:bg-red-500/10 backdrop-blur-sm transition-all">
                     <Pause className="w-3 h-3" /> STOP
                   </button>
@@ -1047,21 +1094,29 @@ export function TacticalMissionPlanner() {
                   className="flex items-center gap-1 px-2.5 py-1 rounded text-[7px] font-orbitron bg-slate-900/70 text-red-400 border border-red-500/20 hover:bg-red-500/10 backdrop-blur-sm transition-all">
                   <Trash2 className="w-3 h-3" /> CLEAR
                 </button>
+                {aiPathStats && !simulating && !simulatingSwarm && (
+                    <button
+                      onClick={() => { setSimOnAiPath(true); setSimulatingSwarm(true); setSimProgress(0); }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded text-[7px] font-orbitron bg-red-900/90 text-white font-bold border border-red-500 hover:bg-red-500 transition-all shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse"
+                    >
+                      <Target className="w-3 h-3" /> DEPLOY SWARM 
+                    </button>
+                )}
               </div>
 
               {/* Sim progress bar */}
-              {simulating && (
+              {(simulating || simulatingSwarm) && (
                 <div className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-slate-900/85 border border-emerald-500/20 rounded-lg px-4 py-2 z-[1000] backdrop-blur-sm min-w-[240px]">
-                  <div className={`text-[7px] font-orbitron mb-1 ${simOnAiPath ? "text-amber-400" : "text-emerald-400"}`}>
-                    {simOnAiPath ? "AI ROUTE SIMULATION" : "MANUAL ROUTE SIMULATION"} — {Math.round(simProgress * 100)}%
+                  <div className={`text-[7px] font-orbitron mb-1 ${simulatingSwarm ? "text-cyan-400" : simOnAiPath ? "text-amber-400" : "text-emerald-400"}`}>
+                    {simulatingSwarm ? "UCAV SWARM DEPLOYMENT" : simOnAiPath ? "AI ROUTE SIMULATION" : "MANUAL ROUTE SIMULATION"} — {Math.round(simProgress * 100)}%
                   </div>
                   <div className="w-full h-1.5 bg-slate-800 rounded-full">
-                    <div className={`h-full rounded-full transition-all ${simOnAiPath ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${simProgress * 100}%` }} />
+                    <div className={`h-full rounded-full transition-all ${simulatingSwarm ? "bg-cyan-500" : simOnAiPath ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${simProgress * 100}%` }} />
                   </div>
-                  {simOnAiPath && aiPathStats && (
+                  {(simOnAiPath && aiPathStats) && (
                     <div className="flex justify-between text-[6px] font-space-mono text-slate-500 mt-1">
                       <span>{Math.round((aiPathStats.stats?.total_km ?? 0) * simProgress)} / {aiPathStats.stats?.total_km} km</span>
-                      <span>{missionProfile.vessel.split("(")[0].trim()} @ {missionProfile.speed}kn</span>
+                      <span>{simulatingSwarm ? "SWARM GROUP ALPHA" : `${missionProfile.vessel.split("(")[0].trim()} @ ${missionProfile.speed}kn`}</span>
                     </div>
                   )}
                 </div>

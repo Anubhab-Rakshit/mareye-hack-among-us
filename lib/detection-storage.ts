@@ -26,11 +26,35 @@ interface StoredDetection {
 const STORAGE_KEY = "mareye_detections"
 const MAX_STORED_DETECTIONS = 100
 
+export function normalizeOverallThreatScore(score?: number): number | undefined {
+  if (typeof score !== "number" || Number.isNaN(score)) return undefined
+
+  const percentageScore = score <= 1 ? score * 100 : score
+  const boundedScore = Math.max(0, Math.min(100, percentageScore))
+  return Math.round(boundedScore * 10) / 10
+}
+
 export function loadDetections(): StoredDetection[] {
   if (typeof window === "undefined") return []
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? JSON.parse(stored) : []
+    if (!stored) return []
+
+    const parsed: StoredDetection[] = JSON.parse(stored)
+    if (!Array.isArray(parsed)) return []
+
+    // Support both legacy 0-1 and current 0-100 threat-score formats.
+    const normalized = parsed.map((detection) => ({
+      ...detection,
+      overallThreatScore: normalizeOverallThreatScore(detection.overallThreatScore),
+    }))
+
+    // Persist migrated scores once to keep subsequent reads consistent.
+    if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
+    }
+
+    return normalized
   } catch (error) {
     console.error("[v0] Failed to load detections from localStorage:", error)
     return []
@@ -90,7 +114,9 @@ export function getThreatStats() {
   if (detections.length > 0) {
     const allConfidences = detections.flatMap((d) => d.detections.map((det) => det.confidence))
     if (allConfidences.length > 0) {
-      avgConfidence = Math.round(allConfidences.reduce((sum, conf) => sum + conf, 0) / allConfidences.length)
+      avgConfidence = Math.round(
+        (allConfidences.reduce((sum, conf) => sum + conf, 0) / allConfidences.length) * 100,
+      )
     }
   }
 

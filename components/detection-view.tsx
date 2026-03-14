@@ -18,7 +18,11 @@ import DetectionResultsEnhanced from "./detection-results-enhanced";
 import RealTimeFeed from "./real-time-feed";
 import TacticalStat from "./tactical-stat";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { addDetection, loadDetections } from "@/lib/detection-storage";
+import {
+  addDetection,
+  loadDetections,
+  normalizeOverallThreatScore,
+} from "@/lib/detection-storage";
 
 interface Detection {
   class: string;
@@ -59,7 +63,7 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
       processingTime: s.processingTime,
       totalObjects: s.totalObjects,
       overallThreatLevel: s.overallThreatLevel,
-      overallThreatScore: s.overallThreatScore,
+      overallThreatScore: normalizeOverallThreatScore(s.overallThreatScore),
       threatCount: s.threatCount,
       timestamp: new Date(s.timestamp),
     }));
@@ -176,6 +180,9 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
       const result = await response.json();
 
       if (result.success) {
+        const normalizedThreatScore =
+          normalizeOverallThreatScore(result.overallThreatScore) ?? 0;
+
         // Get location from inputs or profile
         let finalLat = latitude ? parseFloat(latitude) : null;
         let finalLng = longitude ? parseFloat(longitude) : null;
@@ -200,7 +207,7 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
           processingTime: result.processingTime,
           totalObjects: result.detections.length,
           overallThreatLevel: result.overallThreatLevel,
-          overallThreatScore: result.overallThreatScore,
+          overallThreatScore: normalizedThreatScore,
           threatCount: result.threatCount,
           timestamp: new Date(),
         };
@@ -222,9 +229,9 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
         updateResults(newResults);
         
         // Save to map if coords provided and threat detected
-        if (finalLat && finalLng && result.overallThreatScore > 0) {
+        if (finalLat && finalLng && normalizedThreatScore > 0) {
           const mainClass = result.detections[0]?.class || "Unknown Contact";
-          storeThreatForMap(finalLat, finalLng, result.overallThreatScore, mainClass);
+          storeThreatForMap(finalLat, finalLng, normalizedThreatScore, mainClass);
         }
         
         setSelectedFile(null);
@@ -276,6 +283,9 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
       const result = await response.json();
 
       if (result.success) {
+        const normalizedThreatScore =
+          normalizeOverallThreatScore(result.overallThreatScore) ?? 0;
+
         // Get location from inputs or profile
         let finalLat = latitude ? parseFloat(latitude) : null;
         let finalLng = longitude ? parseFloat(longitude) : null;
@@ -300,7 +310,7 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
           processingTime: result.processingTime,
           totalObjects: result.detections.length,
           overallThreatLevel: result.overallThreatLevel,
-          overallThreatScore: result.overallThreatScore,
+          overallThreatScore: normalizedThreatScore,
           threatCount: result.threatCount,
           timestamp: new Date(),
         };
@@ -327,9 +337,9 @@ export default function DetectionView({ onResultsUpdate }: DetectionViewProps) {
         updateResults(newResults);
         
         // Save to map if coords provided and threat detected
-        if (finalLat && finalLng && result.overallThreatScore > 0) {
+        if (finalLat && finalLng && normalizedThreatScore > 0) {
           const mainClass = result.detections[0]?.class || "Unknown Contact";
-          storeThreatForMap(finalLat, finalLng, result.overallThreatScore, mainClass);
+          storeThreatForMap(finalLat, finalLng, normalizedThreatScore, mainClass);
         }
         
         setSelectedFile(null);

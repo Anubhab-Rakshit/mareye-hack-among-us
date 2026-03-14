@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         user: {
           id: adminId,
           email,
-          firstName: "Srijit",
+          firstName: "Anubhab",
           lastName: "Admin",
           avatar: null,
           isHoneypotAdmin: true,

@@ -237,7 +237,7 @@ class ThreatDetector:
             weight = threat_weights.get(threat['threat_level'], 1.0)
             total_score += threat['confidence'] * weight
         
-        # Normalize score
+        # Normalize score to 0-1 for threat-level classification
         max_possible_score = len(threats) * 4.0  # All critical threats
         normalized_score = total_score / max_possible_score if max_possible_score > 0 else 0.0
         
@@ -253,9 +253,10 @@ class ThreatDetector:
         else:
             level = 'MINIMAL'
         
+        # Return score as percentage so UI can display it directly.
         return {
             'level': level,
-            'score': round(normalized_score, 3)
+            'score': round(normalized_score * 100, 1)
         }
     
     def _get_timestamp(self) -> str:
@@ -393,7 +394,7 @@ def main():
             print(f"✅ Detection successful")
             print(f"🎯 Threats found: {result['threat_count']}")
             print(f"⚠️  Overall threat level: {result['overall_threat_level']}")
-            print(f"📊 Threat score: {result['overall_threat_score']}")
+            print(f"📊 Threat score: {result['overall_threat_score']}%")
             
             if result['threats']:
                 print(f"\n🚨 DETECTED THREATS:")

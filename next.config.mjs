@@ -9,6 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  transpilePackages: ['three', 'react-globe.gl', 'globe.gl'],
   experimental: {
     workerThreads: false,
   },

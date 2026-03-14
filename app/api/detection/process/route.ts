@@ -373,7 +373,7 @@ def run_video_threat_detection(input_path, output_path):
             'total_objects': len(filtered_detections),
             'frame_count': frame_count,
             'overall_threat_level': overall_threat_level,
-            'overall_threat_score': avg_threat_score,
+            'overall_threat_score': round(avg_threat_score * 100, 1),
             'threat_count': len(filtered_detections)
         }
         

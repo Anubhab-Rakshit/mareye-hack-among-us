@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ 
         success: true, 
         user: {
-          firstName: "Srijit",
+          firstName: "Anubhab",
           lastName: "Admin",
           email: decoded.email,
           avatar: null,

@@ -1,6 +1,7 @@
 "use client";
 import { Download, Trash2, AlertTriangle, BarChart3 } from "lucide-react";
 import HolographicCard from "./holographic-card";
+import { normalizeOverallThreatScore } from "@/lib/detection-storage";
 
 interface Detection {
   class: string;
@@ -75,6 +76,8 @@ export default function DetectionResultsEnhanced({
           ? "#ffff00"
           : "#00ff88";
 
+  const normalizedThreatScore = normalizeOverallThreatScore(overallThreatScore);
+
   return (
     <HolographicCard className="mb-6" animated>
       <div className="space-y-6">
@@ -133,8 +136,8 @@ export default function DetectionResultsEnhanced({
           <div className="border border-cyan-500/20 rounded-lg p-3 bg-slate-800/30">
             <p className="text-xs text-slate-400 mb-1">Overall Confidence</p>
             <p className="text-xl font-bold text-accent font-mono">
-              {overallThreatScore
-                ? `${Math.round(overallThreatScore)}%`
+              {typeof normalizedThreatScore === "number"
+                ? `${Math.round(normalizedThreatScore)}%`
                 : "N/A"}
             </p>
           </div>
