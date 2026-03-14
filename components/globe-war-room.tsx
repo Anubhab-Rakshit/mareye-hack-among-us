@@ -9,16 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import dynamic from "next/dynamic";
 import { WarRoomHoneypotFeed } from "@/components/war-room-honeypot-feed";
 
-// Dynamically import Leaflet map to prevent SSR window issues
-const AdvancedLeafletMap = dynamic(
-  () => import("@/components/advanced-leaflet-map"),
+// Dynamically import Tactical Globe to prevent SSR window issues
+const TacticalGlobe = dynamic(
+  () => import("@/components/tactical-globe"),
   {
     ssr: false,
     loading: () => (
       <div className="w-full h-full flex items-center justify-center bg-slate-950 rounded-xl">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-cyan-500 animate-spin mx-auto mb-2" />
-          <p className="text-[10px] text-cyan-500/50 font-space-mono">LOADING MAP...</p>
+          <p className="text-[10px] text-cyan-500/50 font-space-mono">INITIALIZING 3D TACTICAL ENGINE...</p>
         </div>
       </div>
     ),
@@ -89,26 +89,54 @@ export function GlobeWarRoom() {
   const [assets, setAssets] = useState<NavalAsset[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<NavalAsset | null>(null);
 
-  const fetchIntel = useCallback(async () => {
-    try {
-      setError(null);
-      const res = await fetch("/api/intelligence");
-      if (!res.ok) throw new Error("Intelligence link failed");
-      const data = await res.json();
-      setIntel(data);
-      setAssets(generateAssets(data.zones));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Network failure");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    // Initial load from localStorage
+    const loadLocalData = () => {
+      if (typeof window !== "undefined") {
+        const storedLocation = localStorage.getItem("userLocation");
+        let uLoc: [number, number] = [21.0, 88.0];
+        if (storedLocation) {
+          const parsed = JSON.parse(storedLocation);
+          uLoc = [parsed.lat, parsed.lng];
+        }
+
+        const storedThreats = localStorage.getItem("activeThreats");
+        let activeThreats: any[] = [];
+        if (storedThreats) {
+          activeThreats = JSON.parse(storedThreats);
+        }
+
+        // Convert stored threats to NavalAssets
+        const threatAssets: NavalAsset[] = activeThreats.map((t, i) => ({
+          id: `TRK-${t.id || i}`,
+          name: t.classification ? `${t.classification.toUpperCase()}` : "UNIDENTIFIED CONTACT",
+          type: "submarine",
+          lat: t.lat,
+          lng: t.lng,
+          heading: Math.round(Math.random() * 360),
+          speed: t.speedKts || Math.round(Math.random() * 20),
+          status: "alert",
+          threat: "hostile",
+          details: `Distance: ${t.distance}km\nConfidence: ${t.threatScore || 85}%\nVulnerability: ${t.vulnerability || "Hull integrity compromised"}\nExpected Damage: ${t.damagePotential || "High"}`
+        }));
+
+        setAssets(threatAssets);
+        setLoading(false);
+      }
+    };
+
+    loadLocalData();
+
+    // Listen for new threats
+    const handleThreatEvent = (e: any) => {
+      loadLocalData(); // Reload everything to stay in sync
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("threatDetected", handleThreatEvent);
+      return () => window.removeEventListener("threatDetected", handleThreatEvent);
     }
   }, []);
-
-  useEffect(() => {
-    fetchIntel();
-    const int = setInterval(fetchIntel, 30000);
-    return () => clearInterval(int);
-  }, [fetchIntel]);
 
   // Loading state — inline, no full-page takeover since we're inside a tab
   if (loading && !intel) return (
@@ -131,7 +159,7 @@ export function GlobeWarRoom() {
         <p className="text-red-400 font-orbitron text-sm mb-1">INTELLIGENCE LINK FAILED</p>
         <p className="text-[11px] font-space-mono text-slate-500 mb-4">{error}</p>
         <button
-          onClick={fetchIntel}
+          onClick={() => window.location.reload()}
           className="px-5 py-2 border border-cyan-500/40 text-cyan-400 rounded-lg font-orbitron text-xs hover:bg-cyan-500/10 transition-all"
         >
           RETRY
@@ -220,7 +248,12 @@ export function GlobeWarRoom() {
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent z-10 pointer-events-none" />
           <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent z-10 pointer-events-none" />
 
-          <AdvancedLeafletMap />
+          <TacticalGlobe 
+            assets={assets} 
+            zones={intel?.zones || []}
+            onAssetClick={setSelectedAsset}
+            selectedAssetId={selectedAsset?.id}
+          />
         </div>
 
         {/* ── RIGHT: Naval Assets + Zone Threats ── */}
@@ -228,9 +261,9 @@ export function GlobeWarRoom() {
           {/* Naval Assets */}
           <div className="bg-slate-900/50 border border-cyan-500/15 rounded-xl p-3 flex flex-col flex-1" style={{ maxHeight: "380px" }}>
             <div className="flex items-center gap-2 mb-2 pb-2 border-b border-cyan-500/10">
-              <Anchor className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="text-[10px] font-orbitron text-cyan-400 tracking-wider">NAVAL ASSETS</span>
-              <span className="ml-auto text-[8px] text-slate-500 font-space-mono">{assets.length} tracked</span>
+              <Anchor className="w-3.5 h-3.5 text-red-500" />
+              <span className="text-[10px] font-orbitron text-red-400 tracking-wider">DETECTED HOSTILES</span>
+              <span className="ml-auto text-[8px] text-slate-500 font-space-mono">{assets.length} isolated tracks</span>
             </div>
             <div className="flex-1 overflow-y-auto space-y-1 war-scroll pr-1">
               {assets.map(a => {

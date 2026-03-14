@@ -39,7 +39,7 @@ next-env.d.ts
 # Keep others ignored
 *.py
 *.pt
-*.ipynb
+.npm-local/
 *.npz
 /detection/
 /scripts/
