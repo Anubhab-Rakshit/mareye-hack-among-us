@@ -8,6 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import dynamic from "next/dynamic";
 import { WarRoomHoneypotFeed } from "@/components/war-room-honeypot-feed";
+import { loadDetections } from "@/lib/detection-storage";
 
 // Dynamically import Tactical Globe to prevent SSR window issues
 const TacticalGlobe = dynamic(
@@ -87,6 +88,7 @@ export function GlobeWarRoom() {
   const [error, setError] = useState<string | null>(null);
   const [intel, setIntel] = useState<IntelResponse | null>(null);
   const [assets, setAssets] = useState<NavalAsset[]>([]);
+  const [userLocation, setUserLocation] = useState<[number, number]>([21.0, 88.0]);
   const [selectedAsset, setSelectedAsset] = useState<NavalAsset | null>(null);
 
   useEffect(() => {
@@ -96,45 +98,84 @@ export function GlobeWarRoom() {
         const storedLocation = localStorage.getItem("userLocation");
         let uLoc: [number, number] = [21.0, 88.0];
         if (storedLocation) {
-          const parsed = JSON.parse(storedLocation);
-          uLoc = [parsed.lat, parsed.lng];
+          try {
+            const parsed = JSON.parse(storedLocation);
+            uLoc = [parsed.lat, parsed.lng];
+          } catch (e) {}
         }
 
-        const storedThreats = localStorage.getItem("activeThreats");
-        let activeThreats: any[] = [];
-        if (storedThreats) {
-          activeThreats = JSON.parse(storedThreats);
-        }
+        // Load detections from the shared library
+        const detections = loadDetections();
+        
+        // Convert stored detections to NavalAssets for the 3D globe
+        const threatAssets: NavalAsset[] = detections
+          .filter((d: any) => d.lat !== undefined && d.lng !== undefined)
+          .flatMap((d: any, i: number) => 
+            d.detections.map((obj: any, objIdx: number) => {
+              const vulnerabilities = [
+                'Hull Seal Instability (SS-S3)', 
+                'Signal Cavitation Signature', 
+                'Thermal Exhaust Leak (Port-side)', 
+                'Electronic Scrambler Desync'
+              ];
+              const potentials = ['Critical', 'Severe', 'Moderate', 'Slight'];
+              const recommendations = [
+                'Acoustic Decoy Deployment', 
+                'Depth Charge Alpha Strike', 
+                'Electronic Suppression Pulse', 
+                'Passive Buoy Triangulation'
+              ];
+              
+              const vuln = vulnerabilities[Math.floor(Math.random() * vulnerabilities.length)];
+              const pot = potentials[Math.floor(Math.random() * potentials.length)];
+              const rec = recommendations[Math.floor(Math.random() * recommendations.length)];
 
-        // Convert stored threats to NavalAssets
-        const threatAssets: NavalAsset[] = activeThreats.map((t, i) => ({
-          id: `TRK-${t.id || i}`,
-          name: t.classification ? `${t.classification.toUpperCase()}` : "UNIDENTIFIED CONTACT",
-          type: "submarine",
-          lat: t.lat,
-          lng: t.lng,
-          heading: Math.round(Math.random() * 360),
-          speed: t.speedKts || Math.round(Math.random() * 20),
-          status: "alert",
-          threat: "hostile",
-          details: `Distance: ${t.distance}km\nConfidence: ${t.threatScore || 85}%\nVulnerability: ${t.vulnerability || "Hull integrity compromised"}\nExpected Damage: ${t.damagePotential || "High"}`
-        }));
+              return {
+                id: `${d.id}_${objIdx}`,
+                name: obj.class.toUpperCase(),
+                type: obj.class.toLowerCase().includes('submarine') ? 'submarine' : 'patrol',
+                lat: Number(d.lat),
+                lng: Number(d.lng),
+                heading: Math.round(Math.random() * 360),
+                speed: Math.round(Math.random() * 15),
+                status: "alert",
+                threat: "hostile",
+                vulnerability: vuln,
+                damagePotential: pot,
+                details: `AI Scan Analysis #${d.id.slice(-4)}\nClass: ${obj.class}\nConfidence: ${(obj.confidence * 100).toFixed(1)}%\nTactical Rec: ${rec}`
+              };
+            })
+          );
 
         setAssets(threatAssets);
+        setUserLocation(uLoc); // Ensure state is updated so TacticalGlobe receives it
         setLoading(false);
       }
     };
 
+    // Load initial data
     loadLocalData();
 
-    // Listen for new threats
-    const handleThreatEvent = (e: any) => {
-      loadLocalData(); // Reload everything to stay in sync
+    // Listen for new detections
+    const handleDetectionEvent = () => {
+      loadLocalData();
     };
 
     if (typeof window !== "undefined") {
-      window.addEventListener("threatDetected", handleThreatEvent);
-      return () => window.removeEventListener("threatDetected", handleThreatEvent);
+      window.addEventListener("detectionAdded", handleDetectionEvent);
+      // Also fetch the intel summary for the stats bar
+      const fetchIntel = async () => {
+        try {
+          const res = await fetch("/api/intelligence");
+          if (res.ok) {
+            const json = await res.json();
+            setIntel(json);
+          }
+        } catch (e) {}
+      };
+      fetchIntel();
+      
+      return () => window.removeEventListener("detectionAdded", handleDetectionEvent);
     }
   }, []);
 
@@ -251,6 +292,7 @@ export function GlobeWarRoom() {
           <TacticalGlobe 
             assets={assets} 
             zones={intel?.zones || []}
+            userLocation={userLocation}
             onAssetClick={setSelectedAsset}
             selectedAssetId={selectedAsset?.id}
           />
