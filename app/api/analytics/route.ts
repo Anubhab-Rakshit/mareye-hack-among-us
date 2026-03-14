@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { readFile, readdir, rm } from "fs/promises"
 import { join } from "path"
 import { existsSync } from "fs"
+import { resolveInsideBase, sanitizeFileSegment } from "@/lib/path-security"
 
 export async function GET(request: NextRequest) {
   try {
-    const analyticsDir = join(process.cwd(), "Deep_Sea-NN-main", "analytics_output")
+    const projectRoot = process.cwd()
+    const analyticsDir = join(projectRoot, "Deep_Sea-NN-main", "analytics_output")
     
     if (!existsSync(analyticsDir)) {
       return NextResponse.json({ 
@@ -55,11 +57,16 @@ export async function GET(request: NextRequest) {
             const enhancedReportData = { ...reportData }
             if (reportData.file_paths) {
               // Try to load original image
-              if (reportData.file_paths.original && existsSync(reportData.file_paths.original)) {
+              const originalPath =
+                typeof reportData.file_paths.original === "string"
+                  ? resolveInsideBase(projectRoot, reportData.file_paths.original)
+                  : null
+
+              if (originalPath && existsSync(originalPath)) {
                 try {
-                  const originalBuffer = await readFile(reportData.file_paths.original)
+                  const originalBuffer = await readFile(originalPath)
                   const originalBase64 = originalBuffer.toString("base64")
-                  const ext = reportData.file_paths.original.split('.').pop()?.toLowerCase() || 'jpg'
+                  const ext = originalPath.split('.').pop()?.toLowerCase() || 'jpg'
                   enhancedReportData.original_image = `data:image/${ext === 'png' ? 'png' : 'jpeg'};base64,${originalBase64}`
                 } catch (error) {
                   console.warn(`Failed to load original image for ${dir.name}:`, error)
@@ -67,11 +74,16 @@ export async function GET(request: NextRequest) {
               }
               
               // Try to load enhanced image
-              if (reportData.file_paths.enhanced && existsSync(reportData.file_paths.enhanced)) {
+              const enhancedPath =
+                typeof reportData.file_paths.enhanced === "string"
+                  ? resolveInsideBase(projectRoot, reportData.file_paths.enhanced)
+                  : null
+
+              if (enhancedPath && existsSync(enhancedPath)) {
                 try {
-                  const enhancedBuffer = await readFile(reportData.file_paths.enhanced)
+                  const enhancedBuffer = await readFile(enhancedPath)
                   const enhancedBase64 = enhancedBuffer.toString("base64")
-                  const ext = reportData.file_paths.enhanced.split('.').pop()?.toLowerCase() || 'jpg'
+                  const ext = enhancedPath.split('.').pop()?.toLowerCase() || 'jpg'
                   enhancedReportData.enhanced_image = `data:image/${ext === 'png' ? 'png' : 'jpeg'};base64,${enhancedBase64}`
                 } catch (error) {
                   console.warn(`Failed to load enhanced image for ${dir.name}:`, error)
@@ -113,7 +125,8 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json()
-    const { analysisName } = body
+    const rawAnalysisName = typeof body?.analysisName === "string" ? body.analysisName : ""
+    const analysisName = sanitizeFileSegment(rawAnalysisName)
 
     if (!analysisName) {
       return NextResponse.json({ 
@@ -121,8 +134,20 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 })
     }
 
+    if (analysisName !== rawAnalysisName) {
+      return NextResponse.json({
+        error: "Invalid analysis name"
+      }, { status: 400 })
+    }
+
     const analyticsDir = join(process.cwd(), "Deep_Sea-NN-main", "analytics_output")
-    const analysisPath = join(analyticsDir, analysisName)
+    const analysisPath = resolveInsideBase(analyticsDir, analysisName)
+
+    if (!analysisPath) {
+      return NextResponse.json({
+        error: "Invalid analysis path"
+      }, { status: 403 })
+    }
 
     if (!existsSync(analysisPath)) {
       return NextResponse.json({ 

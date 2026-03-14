@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { readFile } from "fs/promises"
 import { join } from "path"
 import { existsSync } from "fs"
+import { decodeBase64PathSegment, resolveInsideBase, sanitizeFileSegment } from "@/lib/path-security"
 
 export async function GET(
   request: NextRequest,
@@ -11,10 +12,18 @@ export async function GET(
     const { id } = params
     
     // Decode the video ID (it's base64 encoded filename)
-    const filename = Buffer.from(id, 'base64').toString('utf-8')
+    const decoded = decodeBase64PathSegment(id)
+    if (!decoded) {
+      return NextResponse.json({ error: "Invalid video id" }, { status: 400 })
+    }
+    const filename = sanitizeFileSegment(decoded)
     
     // Construct the path to the video file
-    const videoPath = join(process.cwd(), "temp", "output", filename)
+    const baseDir = join(process.cwd(), "temp", "output")
+    const videoPath = resolveInsideBase(baseDir, filename)
+    if (!videoPath) {
+      return NextResponse.json({ error: "Invalid video path" }, { status: 403 })
+    }
     
     if (!existsSync(videoPath)) {
       return NextResponse.json({ error: "Video not found" }, { status: 404 })

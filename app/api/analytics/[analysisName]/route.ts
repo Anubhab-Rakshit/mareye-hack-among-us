@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import { rm } from "fs/promises"
 import { join } from "path"
 import { existsSync } from "fs"
+import { resolveInsideBase, sanitizeFileSegment } from "@/lib/path-security"
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { analysisName: string } }
 ) {
   try {
-    const { analysisName } = params
+    const rawAnalysisName = params.analysisName
+    const analysisName = sanitizeFileSegment(rawAnalysisName)
 
     if (!analysisName) {
       return NextResponse.json({ 
@@ -16,8 +18,20 @@ export async function DELETE(
       }, { status: 400 })
     }
 
+    if (analysisName !== rawAnalysisName) {
+      return NextResponse.json({
+        error: "Invalid analysis name"
+      }, { status: 400 })
+    }
+
     const analyticsDir = join(process.cwd(), "Deep_Sea-NN-main", "analytics_output")
-    const analysisPath = join(analyticsDir, analysisName)
+    const analysisPath = resolveInsideBase(analyticsDir, analysisName)
+
+    if (!analysisPath) {
+      return NextResponse.json({
+        error: "Invalid analysis path"
+      }, { status: 403 })
+    }
 
     if (!existsSync(analysisPath)) {
       return NextResponse.json({ 

@@ -274,29 +274,60 @@ export function MareyeVoiceAssistant() {
       const collapsed = normalized.replace(/\s/g, "");
       if (!collapsed) return false;
 
+      // Primary Patterns (Strict-ish)
       const directPatterns = [
-        /\b(hey|hi|hello|okay|ok)\s+marine\s*security\b/i,
-        /\bmarine\s*security\b/i,
+        /\b(hey|hi|hello|okay|ok)\s+(marine\s*security|mareye|mar\s*eye)\b/i,
+        /\b(marine\s*security|mareye|mar\s*eye)\b/i,
       ];
 
       if (directPatterns.some((p) => p.test(normalized))) return true;
-      if (
-        collapsed.includes("marinesecurity")
-      ) {
-        return true;
-      }
+      
+      // Secondary logic for common mishearings
+      const mishearings = [
+        "marina security",
+        "marines security",
+        "maring security",
+        "morning security",
+        "my eye",
+        "merrie",
+        "marry",
+        "marry eye",
+        "more eye",
+        "marine",
+        "security"
+      ];
 
-      const target = "marine security";
-      const words = normalized.split(" ").filter(Boolean);
-      for (let i = 0; i < words.length; i++) {
-        const one = words[i];
-        if (levenshtein(one, target) <= 2) return true;
-        if (i < words.length - 1) {
-          const two = `${words[i]} ${words[i + 1]}`;
-          if (levenshtein(two, target.replace(/\s/g, "")) <= 2) return true;
-          if (levenshtein(two, "marinesecurity") <= 2) return true;
+      if (mishearings.some(m => normalized.includes(m) || collapsed.includes(m.replace(/\s/g, "")))) {
+        // Only trigger on "marine" or "security" if it's the dominant part of a short phrase
+        if ((normalized === "marine" || normalized === "security") && normalized.length > 0) {
+            // we'll allow it for better UX in noisy environments
+            return true;
+        }
+        if (normalized.includes("marine") || normalized.includes("security") || normalized.includes("eye")) {
+            return true;
         }
       }
+
+      const targets = ["marine security", "marinesecurity", "mareye", "mar eye"];
+      const words = normalized.split(" ").filter(Boolean);
+      
+      for (const target of targets) {
+        // Direct fuzzy match on whole input
+        if (levenshtein(normalized, target) <= 2) return true;
+        if (levenshtein(collapsed, target.replace(/\s/g, "")) <= 2) return true;
+
+        // Word-by-word fuzzy match
+        for (let i = 0; i < words.length; i++) {
+          const one = words[i];
+          if (levenshtein(one, target) <= 2) return true;
+          if (i < words.length - 1) {
+            const two = `${words[i]} ${words[i + 1]}`;
+            if (levenshtein(two, target.replace(/\s/g, "")) <= 2) return true;
+            if (levenshtein(two, target) <= 2) return true;
+          }
+        }
+      }
+      
       return false;
     },
     [levenshtein, normalizeSpeech],

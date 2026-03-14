@@ -16,6 +16,10 @@ const INDICATOR_RULES: Array<{ label: string; pattern: RegExp }> = [
   { label: 'path-traversal-pattern', pattern: /(\.\/.\.\.|\.{2}\/|%2e%2e%2f)/i },
   { label: 'rce-pattern', pattern: /(\b(?:bash|sh|cmd|powershell)\b|;\s*cat\s+|\$\(|`)/i },
   { label: 'scanner-signature', pattern: /(sqlmap|nmap|nikto|acunetix|burpsuite|curl\/|python-requests)/i },
+  {
+    label: 'decoy-credential-reuse',
+    pattern: /decoy-credential-reuse|canary_hp_|hp_api_|hp_jwt_|akiahoneypot/i,
+  },
 ]
 
 export type HoneypotEvent = {
@@ -90,6 +94,10 @@ function calculateRiskScore(method: string, indicators: string[], targetPath: st
 
   if (/admin|debug|internal|\.env|\.git|phpmyadmin|wp-login/i.test(targetPath)) {
     score += 30
+  }
+
+  if (indicators.includes('decoy-credential-reuse')) {
+    score += 45
   }
 
   score += indicators.length * 10

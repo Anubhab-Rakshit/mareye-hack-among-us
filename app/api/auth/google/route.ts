@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAuthorizationUrl, getBaseUrlFromRequest } from "@/lib/google-oauth";
 
-export const dynamic = "force-dynamic";
-
 export async function GET(request: NextRequest) {
   try {
     const baseUrl = getBaseUrlFromRequest(request);

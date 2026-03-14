@@ -3,6 +3,7 @@ import { runPythonCommand } from "@/lib/python-runner"
 import { writeFile, mkdir, unlink } from "fs/promises"
 import { join } from "path"
 import { existsSync } from "fs"
+import { generateSafeUploadFilename } from "@/lib/path-security"
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Save uploaded file
     const fileBuffer = await file.arrayBuffer()
-    const fileName = file.name
+    const fileName = generateSafeUploadFilename(file.name, "jetson")
     const inputPath = join(inputDir, fileName)
     await writeFile(inputPath, Buffer.from(fileBuffer))
 

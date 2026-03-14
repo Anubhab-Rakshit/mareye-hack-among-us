@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { readFile, existsSync } from "fs"
 import { join } from "path"
 import { promisify } from "util"
+import { decodeBase64PathSegment, resolveInsideBase, sanitizeFileSegment } from "@/lib/path-security"
 
 const readFileAsync = promisify(readFile)
 
@@ -17,12 +18,20 @@ export async function GET(
     }
 
     // Decode the video ID to get the filename
-    const fileName = Buffer.from(videoId, 'base64').toString('utf-8')
+    const decoded = decodeBase64PathSegment(videoId)
+    if (!decoded) {
+      return NextResponse.json({ error: "Invalid video ID" }, { status: 400 })
+    }
+    const fileName = sanitizeFileSegment(decoded)
     console.log("Serving Jetson video:", fileName)
 
     // Look for the video file in the temp/output directory
     const tempDir = join(process.cwd(), "temp", "output")
-    const videoPath = join(tempDir, fileName)
+    const videoPath = resolveInsideBase(tempDir, fileName)
+
+    if (!videoPath) {
+      return NextResponse.json({ error: "Invalid video path" }, { status: 403 })
+    }
 
     if (!existsSync(videoPath)) {
       console.error("Video file not found:", videoPath)

@@ -42,10 +42,7 @@ export const metadata: Metadata = {
       "Revolutionary AI platform for marine conservation and species discovery",
     type: "website",
   },
-  generator: "Anubhab Rakshit",
-  icons: {
-    icon: "/mareye-logo.svg",
-  },
+  generator: "v0.app",
 };
 
 export default function RootLayout({

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { isIpBlockedInMemory } from "@/lib/blocked-ips-memory";
+import { findDecoyCredentialHits } from "@/lib/honeypot-decoy";
 
 function getClientIpMw(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -44,6 +45,57 @@ function shouldRouteToHoneypot(pathname: string): boolean {
   return honeypotDecoyPrefixes.some((prefix) => lowerPath.startsWith(prefix));
 }
 
+function getDecoyCredentialReuseHits(request: NextRequest): string[] {
+  const pathname = request.nextUrl.pathname;
+  if (pathname.startsWith("/api/honeypot")) {
+    return [];
+  }
+
+  const searchParamsRaw = request.nextUrl.searchParams.toString();
+  const candidateSignals = [
+    pathname,
+    searchParamsRaw,
+    request.headers.get("authorization") ?? "",
+    request.headers.get("cookie") ?? "",
+    request.headers.get("x-api-key") ?? "",
+    request.headers.get("x-auth-token") ?? "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return findDecoyCredentialHits(candidateSignals);
+}
+
+function rewriteToHoneypot(
+  request: NextRequest,
+  targetPath: string,
+  options?: {
+    reason?: string;
+    hits?: string[];
+  },
+) {
+  const honeypotUrl = request.nextUrl.clone();
+  honeypotUrl.pathname = "/api/honeypot/trap";
+  honeypotUrl.search = "";
+
+  const forwardedHeaders = new Headers(request.headers);
+  forwardedHeaders.set("x-honeypot-target", targetPath);
+
+  if (options?.reason) {
+    forwardedHeaders.set("x-honeypot-reason", options.reason);
+  }
+
+  if (options?.hits && options.hits.length > 0) {
+    forwardedHeaders.set("x-honeypot-hits", options.hits.join(","));
+  }
+
+  return NextResponse.rewrite(honeypotUrl, {
+    request: {
+      headers: forwardedHeaders,
+    },
+  });
+}
+
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const authToken = request.cookies.get("auth_token")?.value;
@@ -68,10 +120,21 @@ export function middleware(request: NextRequest) {
   }
 
   if (honeypotEnabled && shouldRouteToHoneypot(pathname)) {
-    const honeypotUrl = request.nextUrl.clone();
-    honeypotUrl.pathname = "/api/honeypot/trap";
-    honeypotUrl.searchParams.set("target", pathname);
-    return NextResponse.rewrite(honeypotUrl);
+    return rewriteToHoneypot(request, pathname);
+  }
+
+  if (honeypotEnabled) {
+    const decoyHits = getDecoyCredentialReuseHits(request);
+    if (decoyHits.length > 0) {
+      console.log(
+        `[HONEYPOT] Decoy credential reuse detected from ${clientIp} at ${pathname} (${decoyHits.join(",")})`,
+      );
+
+      return rewriteToHoneypot(request, pathname, {
+        reason: "decoy-credential-reuse",
+        hits: decoyHits,
+      });
+    }
   }
 
   console.log(

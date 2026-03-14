@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { existsSync } from "fs"
-import { join } from "path"
+import { resolveInsideBase } from "@/lib/path-security"
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,8 +13,19 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    const resolvedDeploymentPath =
+      typeof deploymentPath === "string" && deploymentPath.length > 0
+        ? resolveInsideBase(process.cwd(), deploymentPath)
+        : null
+
+    if (deploymentPath && !resolvedDeploymentPath) {
+      return NextResponse.json({
+        error: "Invalid deployment path"
+      }, { status: 403 })
+    }
+
     // Check if deployment directory exists
-    if (deploymentPath && !existsSync(deploymentPath)) {
+    if (resolvedDeploymentPath && !existsSync(resolvedDeploymentPath)) {
       return NextResponse.json({ 
         error: "Deployment directory not found" 
       }, { status: 404 })

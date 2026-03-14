@@ -8,6 +8,10 @@ import {
   honeypotAdminCookieOptions,
   isConfiguredHoneypotAdminCredential,
 } from "@/lib/honeypot-admin"
+import { findDecoyCredentialHits } from "@/lib/honeypot-decoy"
+import { blockIp } from "@/lib/ip-blocklist"
+import { memoryBlockIp } from "@/lib/blocked-ips-memory"
+import { logHoneypotEvent, maybeSendHoneypotAlert } from "@/lib/honeypot"
 import { verify } from 'otplib'
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret"
@@ -24,6 +28,31 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json({ message: "Missing email or password" }, { status: 400 })
+    }
+
+    const decoyHits = findDecoyCredentialHits(
+      `${email}\n${password}\n${totpCode ?? ""}`,
+    )
+
+    if (decoyHits.length > 0) {
+      const event = await logHoneypotEvent(req, {
+        targetPath: "/api/login",
+        bodySample: `decoy-credential-reuse email=${email} hits=${decoyHits.join(",")}`,
+      })
+      await maybeSendHoneypotAlert(event)
+
+      const autoBlockThreshold = Number(process.env.HONEYPOT_AUTO_BLOCK_THRESHOLD ?? "80")
+      if ((event.riskScore >= autoBlockThreshold || decoyHits.length > 0) && event.ip !== "unknown") {
+        const reason = `Auto-blocked: decoy credential replay on /api/login (${decoyHits.join(",")})`
+        await blockIp(event.ip, reason, "auto")
+        memoryBlockIp(event.ip)
+      }
+
+      console.log(
+        `[HONEYPOT] Login decoy credential replay from ${event.ip} (${decoyHits.join(",")})`,
+      )
+
+      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 })
     }
 
     // ═══ HONEYPOT ADMIN BYPASS — allows login even without DB entry ═══
@@ -58,7 +87,7 @@ export async function POST(req: NextRequest) {
         user: {
           id: adminId,
           email,
-          firstName: "Anubhab",
+          firstName: "Srijit",
           lastName: "Admin",
           avatar: null,
           isHoneypotAdmin: true,
