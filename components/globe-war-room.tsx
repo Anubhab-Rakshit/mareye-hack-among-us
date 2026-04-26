@@ -83,7 +83,7 @@ function generateAssets(zones: ZoneData[]): NavalAsset[] {
   return assets;
 }
 
-export function GlobeWarRoom() {
+export default function GlobeWarRoom() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [intel, setIntel] = useState<IntelResponse | null>(null);

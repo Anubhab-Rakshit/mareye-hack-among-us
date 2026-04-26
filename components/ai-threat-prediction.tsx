@@ -305,7 +305,7 @@ function buildEvents(zones: ZoneData[]): ThreatEvent[] {
   return events.sort((a, b) => a.time.getTime() - b.time.getTime());
 }
 
-export function AIThreatPrediction() {
+export default function AIThreatPrediction() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [intel, setIntel] = useState<IntelResponse | null>(null);

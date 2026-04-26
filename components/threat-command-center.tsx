@@ -485,16 +485,22 @@ export function ThreatCommandCenter() {
     };
   }, [mounted, updateThreatStats, updateSystemHealth]);
 
-  // Listen for custom events (when detections are added in same tab)
+  // Listen for custom events (when detections are added or demo data is reset in same tab)
   useEffect(() => {
     const handleDetectionAdded = () => {
+      updateThreatStats();
+    };
+    const handleDemoReset = () => {
       updateThreatStats();
     };
 
     if (typeof window !== "undefined") {
       window.addEventListener("detectionAdded", handleDetectionAdded);
-      return () =>
+      window.addEventListener("mareye:demo-data-reset", handleDemoReset);
+      return () => {
         window.removeEventListener("detectionAdded", handleDetectionAdded);
+        window.removeEventListener("mareye:demo-data-reset", handleDemoReset);
+      };
     }
   }, [updateThreatStats]);
 

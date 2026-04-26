@@ -3,10 +3,7 @@
 import dynamic from "next/dynamic";
 
 const AIThreatPrediction = dynamic(
-  () =>
-    import("@/components/ai-threat-prediction").then((m) => ({
-      default: m.AIThreatPrediction,
-    })),
+  () => import("@/components/ai-threat-prediction"),
   {
     ssr: false,
     loading: () => (

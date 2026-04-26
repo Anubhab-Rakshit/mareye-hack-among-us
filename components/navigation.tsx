@@ -21,6 +21,7 @@ import {
   Map,
   Activity,
   Radio,
+  Cpu,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -47,6 +48,7 @@ export function Navigation() {
     { href: "/comm-intercept", label: "SIGINT", icon: Radio },
     { href: "/threat-prediction", label: "Threats", icon: Activity },
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/air-commander", label: "A.I.R", icon: Cpu },
   ];
 
   const visibleNavItems = isSecurityAdmin

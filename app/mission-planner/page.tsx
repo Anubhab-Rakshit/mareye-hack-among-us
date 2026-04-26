@@ -3,10 +3,7 @@
 import dynamic from "next/dynamic";
 
 const TacticalMissionPlanner = dynamic(
-  () =>
-    import("@/components/tactical-mission-planner").then((m) => ({
-      default: m.TacticalMissionPlanner,
-    })),
+  () => import("@/components/tactical-mission-planner"),
   {
     ssr: false,
     loading: () => (

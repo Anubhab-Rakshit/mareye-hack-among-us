@@ -3,10 +3,7 @@
 import dynamic from "next/dynamic";
 
 const GlobeWarRoom = dynamic(
-  () =>
-    import("@/components/globe-war-room").then((m) => ({
-      default: m.GlobeWarRoom,
-    })),
+  () => import("@/components/globe-war-room"),
   {
     ssr: false,
     loading: () => (

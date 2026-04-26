@@ -36,7 +36,11 @@ import {
   Target,
   BarChart3,
 } from "lucide-react";
-import { GlobeWarRoom } from "@/components/globe-war-room";
+import dynamic from "next/dynamic";
+const GlobeWarRoom = dynamic(() => import("@/components/globe-war-room"), {
+  ssr: false,
+  loading: () => <div className="h-[600px] flex items-center justify-center bg-slate-900/50 rounded-xl animate-pulse text-cyan-500 font-orbitron">LOADING TACTICAL WAR ROOM...</div>
+});
 
 interface ZoneData {
   id: string;

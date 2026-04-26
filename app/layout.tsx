@@ -12,6 +12,7 @@ import { PageTransition } from "@/components/page-transition";
 import { BubbleCursor } from "@/components/bubble-cursor";
 import { SubmarineHUD } from "@/components/submarine-hud";
 import { MareyeVoiceAssistant } from "@/components/mareye-voice-assistant";
+import { DemoDataResetManager } from "@/components/demo-data-reset-manager";
 import { Toaster } from "sonner";
 
 import "./globals.css";
@@ -55,6 +56,7 @@ export default function RootLayout({
       <body
         className={`font-body ${GeistSans.variable} ${GeistMono.variable} ${orbitron.variable} ${spaceMono.variable}`}
       >
+        <DemoDataResetManager />
         <ConditionalSecurityBar />
         <ConditionalNavigation />
         <BubbleCursor />

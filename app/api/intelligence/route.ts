@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { fetchWithRetry } from "@/lib/fetch-utils";
 
 // Indian Navy operational zones with coordinates
 const NAVAL_ZONES = [
@@ -52,39 +53,30 @@ const NAVAL_ZONES = [
   },
 ];
 
-async function fetchMarineData(lat: number, lon: number) {
-  const url = `https://api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period&hourly=wave_height,wave_direction,wave_period,swell_wave_height&forecast_days=3&timezone=Asia/Kolkata`;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+// Batched data fetching for all zones
+async function fetchBatchMarineData(lats: string, lons: string) {
+  const url = `https://api.open-meteo.com/v1/marine?latitude=${lats}&longitude=${lons}&current=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period&hourly=wave_height,wave_direction,wave_period,swell_wave_height&forecast_days=3&timezone=Asia/Kolkata`;
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      next: { revalidate: 600 },
-    });
+    const res = await fetchWithRetry(url, { next: { revalidate: 600 } });
     if (!res.ok) return null;
-    return res.json();
-  } catch {
+    const data = await res.json();
+    return Array.isArray(data) ? data : [data];
+  } catch (err) {
+    console.error("Batch marine fetch failed:", err);
     return null;
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
-async function fetchWeatherData(lat: number, lon: number) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure&hourly=visibility,temperature_2m,wind_speed_10m&forecast_days=3&timezone=Asia/Kolkata`;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+async function fetchBatchWeatherData(lats: string, lons: string) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure&hourly=visibility,temperature_2m,wind_speed_10m&forecast_days=3&timezone=Asia/Kolkata`;
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      next: { revalidate: 600 },
-    });
+    const res = await fetchWithRetry(url, { next: { revalidate: 600 } });
     if (!res.ok) return null;
-    return res.json();
-  } catch {
+    const data = await res.json();
+    return Array.isArray(data) ? data : [data];
+  } catch (err) {
+    console.error("Batch weather fetch failed:", err);
     return null;
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -423,31 +415,30 @@ function generateIntelBrief(zones: any[]) {
 
 export async function GET() {
   try {
-    const results = await Promise.all(
-      NAVAL_ZONES.map(async (zone) => {
-        let marine = null;
-        let weather = null;
-        try {
-          [marine, weather] = await Promise.all([
-            fetchMarineData(zone.lat, zone.lon),
-            fetchWeatherData(zone.lat, zone.lon),
-          ]);
-        } catch {
-          // If external APIs fail, continue with null data — threat calc handles nulls
-        }
+    const lats = NAVAL_ZONES.map((z) => z.lat).join(",");
+    const lons = NAVAL_ZONES.map((z) => z.lon).join(",");
 
-        const threat = calculateThreatLevel(marine, weather, zone.id);
-        const ops = calculateOpsReadiness(marine, weather);
+    // Execute only 2 batch requests instead of 12 individual ones
+    const [marineDataArray, weatherDataArray] = await Promise.all([
+      fetchBatchMarineData(lats, lons),
+      fetchBatchWeatherData(lats, lons),
+    ]);
 
-        return {
-          ...zone,
-          marine,
-          weather,
-          threat,
-          ops,
-        };
-      }),
-    );
+    const results = NAVAL_ZONES.map((zone, index) => {
+      const marine = marineDataArray ? marineDataArray[index] : null;
+      const weather = weatherDataArray ? weatherDataArray[index] : null;
+
+      const threat = calculateThreatLevel(marine, weather, zone.id);
+      const ops = calculateOpsReadiness(marine, weather);
+
+      return {
+        ...zone,
+        marine,
+        weather,
+        threat,
+        ops,
+      };
+    });
 
     const brief = generateIntelBrief(results);
 

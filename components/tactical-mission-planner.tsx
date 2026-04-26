@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   Navigation, Crosshair, Anchor, Radio, Shield, AlertTriangle, Target,
   MapPin, Play, Pause, Trash2, Settings, Globe2, Activity, RefreshCw, Radar,
@@ -180,7 +181,7 @@ function createNavalIcon(type: NavalMarker["type"]) {
 // ═══════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════
-export function TacticalMissionPlanner() {
+export default function TacticalMissionPlanner() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const routeLineRef = useRef<L.Polyline | null>(null);

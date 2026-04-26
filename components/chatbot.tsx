@@ -15,6 +15,7 @@ interface Message {
 
 export function Chatbot() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isVoiceTriggered, setIsVoiceTriggered] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -26,6 +27,8 @@ export function Chatbot() {
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const lastWakeEventRef = useRef(0)
 
   // Function to format text with proper bullet points and formatting
   const formatMessageContent = (content: string) => {
@@ -69,6 +72,54 @@ export function Chatbot() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    const onWakeWord = () => {
+      const now = Date.now()
+
+      // Debounce duplicate wake events from interim/final speech recognition outputs.
+      if (now - lastWakeEventRef.current < 1500) {
+        return
+      }
+      lastWakeEventRef.current = now
+
+      setIsOpen(true)
+      setIsVoiceTriggered(true)
+
+      setMessages((prev) => {
+        const alreadyAnnounced = prev
+          .slice(-2)
+          .some((m) => m.sender === "bot" && m.content === "Voice wake detected. Listening for your command.")
+
+        if (alreadyAnnounced) return prev
+
+        return [
+          ...prev,
+          {
+            id: `${Date.now()}-wake`,
+            content: "Voice wake detected. Listening for your command.",
+            sender: "bot",
+            timestamp: new Date(),
+          },
+        ]
+      })
+
+      window.setTimeout(() => {
+        inputRef.current?.focus()
+      }, 120)
+
+      window.setTimeout(() => {
+        setIsVoiceTriggered(false)
+      }, 1800)
+    }
+
+    window.addEventListener("mareye:wake", onWakeWord)
+    window.addEventListener("mareye:wake-word-detected", onWakeWord)
+    return () => {
+      window.removeEventListener("mareye:wake", onWakeWord)
+      window.removeEventListener("mareye:wake-word-detected", onWakeWord)
+    }
+  }, [])
 
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return
@@ -149,7 +200,9 @@ export function Chatbot() {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+          className={`w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center ${
+            isVoiceTriggered ? "ring-4 ring-cyan-300/80 animate-pulse" : ""
+          }`}
         >
           {isOpen ? (
             <X className="h-6 w-6" />
@@ -162,7 +215,11 @@ export function Chatbot() {
       {/* Chatbot Window */}
       {isOpen && (
         <div className="fixed bottom-24 right-6 z-50 w-80 sm:w-96">
-          <Card className="bg-slate-900/95 backdrop-blur-sm border-slate-700 shadow-2xl">
+          <Card
+            className={`bg-slate-900/95 backdrop-blur-sm border-slate-700 shadow-2xl transition-all duration-300 ${
+              isVoiceTriggered ? "border-cyan-400 shadow-cyan-500/20" : ""
+            }`}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-white text-sm">
                 <Bot className="h-5 w-5 text-cyan-400" />
@@ -228,6 +285,7 @@ export function Chatbot() {
               <div className="p-4 border-t border-slate-700">
                 <div className="flex gap-2">
                   <Input
+                    ref={inputRef}
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}

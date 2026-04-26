@@ -1,7 +1,8 @@
 "use client";
-import { Download, Trash2, AlertTriangle, BarChart3 } from "lucide-react";
+import { Download, Trash2, AlertTriangle, BarChart3, Cpu } from "lucide-react";
 import HolographicCard from "./holographic-card";
 import { normalizeOverallThreatScore } from "@/lib/detection-storage";
+import Link from "next/link";
 
 interface Detection {
   class: string;
@@ -143,22 +144,33 @@ export default function DetectionResultsEnhanced({
           </div>
         </div>
 
-        {/* Threat status */}
+        {/* Threat status & A.I.R Wake Button */}
         {overallThreatLevel && (
           <div
-            className="flex items-center gap-3 p-4 rounded-lg border-2"
+            className="flex items-center justify-between gap-3 p-4 rounded-lg border-2"
             style={{
               borderColor: threatColor,
               backgroundColor: `${threatColor}20`,
             }}
           >
-            <AlertTriangle className="w-5 h-5" style={{ color: threatColor }} />
-            <div>
-              <p className="text-xs text-slate-400">Overall Threat Level</p>
-              <p className="text-lg font-bold" style={{ color: threatColor }}>
-                {overallThreatLevel}
-              </p>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5" style={{ color: threatColor }} />
+              <div>
+                <p className="text-xs text-slate-400">Overall Threat Level</p>
+                <p className="text-lg font-bold" style={{ color: threatColor }}>
+                  {overallThreatLevel}
+                </p>
+              </div>
             </div>
+            
+            {(overallThreatLevel === "CRITICAL" || overallThreatLevel === "HIGH" || (threatCount && threatCount > 0)) && (
+              <Link href={`/air-commander?threat=${encodeURIComponent(overallThreatLevel || 'THREAT')}&objects=${encodeURIComponent(detections.map(d => d.class).join(', ') || 'Unknown Object')}`}>
+                <button className="flex items-center gap-2 px-4 py-2 rounded-lg font-space-mono text-xs font-bold transition-all uppercase tracking-wider bg-red-500/20 text-red-300 hover:bg-red-500/40 border border-red-500/50 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse">
+                  <Cpu className="w-4 h-4" />
+                  WAKE A.I.R COMMANDER
+                </button>
+              </Link>
+            )}
           </div>
         )}
 
