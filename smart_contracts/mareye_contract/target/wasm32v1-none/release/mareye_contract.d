@@ -1,0 +1,1 @@
+C:\Users\BITTU\Downloads\mareye-ai-work-main\mareye-ai-work-main\smart_contracts\mareye_contract\target\wasm32v1-none\release\mareye_contract.wasm: C:\Users\BITTU\Downloads\mareye-ai-work-main\mareye-ai-work-main\smart_contracts\mareye_contract\src\lib.rs
